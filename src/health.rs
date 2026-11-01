@@ -4,15 +4,9 @@ use crate::player::Player;
 
 pub struct HealthPlugin;
 
-#[derive(Component, Debug)]
+#[derive(Component, Default, Debug)]
 pub struct Health {
     pub point: f32
-}
-
-impl Default for Health {
-    fn default() -> Self {
-        Health { point: 10.0 }
-    }
 }
 
 pub fn entities_health_system(

@@ -75,7 +75,6 @@ fn attacking_player_damage_system(
     };
 
     for (attacker_entity, contact_attack) in &attackers_query {
-
         player_health.point -= contact_attack.damage;
         commands.entity(attacker_entity).insert(AttackCooldown { duration: contact_attack.cooldown.clone() });
 

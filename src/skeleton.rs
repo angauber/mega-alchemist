@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
-use crate::agent::AgentSteering;
+use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
 use crate::attack::ContactAttack;
 use crate::health::Health;
@@ -25,6 +25,7 @@ pub struct SkeletonSpawnerBundle {
 
 #[derive(Bundle, Debug)]
 pub struct SkeletonBundle {
+    enemy: Enemy,
     health: Health,
     attack: ContactAttack,
     steering: AgentSteering,
@@ -42,8 +43,9 @@ pub struct SkeletonBundle {
 impl Default for SkeletonBundle {
     fn default() -> Self {
         SkeletonBundle {
+            enemy: Enemy,
             health: Health { point: 10. },
-            attack: ContactAttack { damage: 25., cooldown: Timer::from_seconds(0.3, TimerMode::Once) },
+            attack: ContactAttack { damage: 20., cooldown: Timer::from_seconds(0.3, TimerMode::Once) },
             steering: AgentSteering { max_speed: 100., max_accel: 500. },
             flippable: FlippableSprite,
             velocity: Velocity::default(),
@@ -62,11 +64,11 @@ impl Default for SkeletonBundle {
 pub fn on_spawn_skeleton(
     _event: On<SpawnSkeleton>,
     mut commands: Commands,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     spawners_query: Query<&Transform, With<SkeletonSpawner>>,
     player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
     asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let Ok(level_id) = level_query.single() else {
         return;

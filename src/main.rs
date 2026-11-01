@@ -13,6 +13,7 @@ use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use crate::game::GamePlugin;
 use crate::spawn_manager::SpawnManagerPlugin;
+use crate::weapon::WeaponPlugin;
 
 mod camera;
 mod player;
@@ -26,6 +27,8 @@ mod ui;
 mod agent;
 mod animation;
 mod spawn_manager;
+mod weapon;
+mod projectile;
 
 fn main() {
     App::new()
@@ -51,6 +54,7 @@ fn main() {
         .add_plugins(SkeletonPlugin)
         .add_plugins(AttackPlugin)
         .add_plugins(HealthPlugin)
+        .add_plugins(WeaponPlugin)
         .add_plugins(AnimationPlugin)
         .add_plugins(UiPlugin)
         .add_systems(Startup, scene.spawn())

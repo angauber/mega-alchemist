@@ -5,6 +5,9 @@ use crate::player::Player;
 pub struct AgentPlugin;
 
 #[derive(Component, Default, Debug)]
+pub struct Enemy;
+
+#[derive(Component, Default, Debug)]
 pub struct AgentSteering {
     pub max_speed: f32,
     pub max_accel: f32,
