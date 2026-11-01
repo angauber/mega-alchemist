@@ -71,7 +71,7 @@ fn render_ui_text(
         let font_handle = assets.load("fonts/Pixuf.ttf");
 
         let camera_transform = camera_query.single().unwrap();
-        let mut default_transform = camera_transform.clone();
+        let mut default_transform = *camera_transform;
 
         default_transform.translation.y += 75.0;
 

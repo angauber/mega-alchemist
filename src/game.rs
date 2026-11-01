@@ -73,7 +73,7 @@ fn spawn_game_main_text_ui_node(
 }
 
 fn update_player_health_text(
-    player_health_query: Query<&Health, Changed<Health>>,
+    player_health_query: Query<&Health, (Changed<Health>, With<Player>)>,
     mut player_health_text_query: Query<&mut Text, With<PlayerHealth>>,
 ) {
     let Ok(player_health) = player_health_query.single() else {

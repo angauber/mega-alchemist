@@ -79,7 +79,7 @@ fn attacking_player_damage_system(
         player_health.point -= contact_attack.damage;
         commands.entity(attacker_entity).insert(AttackCooldown { duration: contact_attack.cooldown.clone() });
 
-        let mut text_transform = player_transform.clone();
+        let mut text_transform = *player_transform;
 
         text_transform.translation.y += 20.;
 

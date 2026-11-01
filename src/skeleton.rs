@@ -5,10 +5,14 @@ use crate::agent::AgentSteering;
 use crate::animation::FlippableSprite;
 use crate::attack::ContactAttack;
 use crate::health::Health;
+use crate::player::Player;
 
 pub struct SkeletonPlugin;
 
 const SKELETON_SPRITE_INDEX: usize = 48;
+
+#[derive(Event)]
+pub struct SpawnSkeleton;
 
 #[derive(Component, Default, Debug)]
 pub struct SkeletonSpawner;
@@ -55,28 +59,46 @@ impl Default for SkeletonBundle {
 }
 
 
-pub fn spawn_skeleton(
+pub fn on_spawn_skeleton(
+    _event: On<SpawnSkeleton>,
     mut commands: Commands,
-    mut spawners_query: Query<&mut Transform, Added<SkeletonSpawner>>,
-    asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    spawners_query: Query<&Transform, With<SkeletonSpawner>>,
+    player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
+    asset_server: Res<AssetServer>,
 ) {
     let Ok(level_id) = level_query.single() else {
-        warn!("level id is missing");
         return;
     };
+
+    let Ok(player_transform) = player_position_query.single() else {
+        return;
+    };
+
+    let player_position = player_transform.translation.xy();
 
     let texture = asset_server.load("tileset/32rogues/monsters.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 12, 13, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
-    for mut spawner_position in spawners_query.iter_mut() {
-        spawner_position.translation.z = 5.0;
-        info!("Spawning skeleton at {:?}", spawner_position.translation.xyz());
+    let Some(furthest_spawner) = spawners_query
+        .iter()
+        .sort_by::<&Transform>(|spawner_a, spawner_b| player_position.distance(spawner_a.translation.xy()).total_cmp(&player_position.distance(spawner_b.translation.xy()))).next_back()
+    else {
+        warn!("no SkeletonSpawner found");
+        return;
+    };
 
-        commands.entity(level_id).with_child(SkeletonBundle {
-            transform: *spawner_position,
+    let mut skeleton_position = *furthest_spawner;
+
+    skeleton_position.translation.z = 5.0;
+
+    info!("Spawning skeleton at {:?}", skeleton_position.translation.xyz());
+
+    commands.entity(level_id)
+        .with_child(SkeletonBundle {
+            transform: skeleton_position,
             sprite: Sprite::from_atlas_image(
                 texture.clone(),
                 TextureAtlas {
@@ -86,13 +108,12 @@ pub fn spawn_skeleton(
             ),
             ..default()
         });
-    }
 }
 
 impl Plugin for SkeletonPlugin {
     fn build(&self, app: &mut App) {
         app
             .register_ldtk_entity::<SkeletonSpawnerBundle>("Skeleton_Spawner")
-            .add_systems(Update, spawn_skeleton);
+            .add_observer(on_spawn_skeleton);
     }
 }

@@ -12,7 +12,7 @@ fn setup_camera(mut commands: Commands) {
     };
 
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Projection::from(projection),
         Transform::default(),
     ));
