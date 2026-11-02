@@ -17,6 +17,7 @@ use bevy_ecs_ldtk::prelude::*;
 
 mod agent;
 mod animation;
+mod asset_tracking;
 mod attack;
 mod camera;
 mod game;
@@ -26,6 +27,7 @@ mod player;
 mod projectile;
 mod skeleton;
 mod spawn_manager;
+mod sprite_assets;
 mod ui;
 mod wall;
 mod weapon;
@@ -43,6 +45,7 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_plugins(asset_tracking::plugin)
         .add_plugins(GamePlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(PhysicsPlugin)

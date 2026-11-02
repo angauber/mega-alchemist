@@ -1,8 +1,10 @@
 use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
+use crate::asset_tracking::LoadResource;
 use crate::attack::ContactAttack;
 use crate::health::Health;
 use crate::player::Player;
+use crate::sprite_assets::MonsterAssets;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -23,47 +25,38 @@ pub struct SkeletonSpawnerBundle {
     spawner: SkeletonSpawner,
 }
 
-#[derive(Bundle, Debug)]
-pub struct SkeletonBundle {
-    enemy: Enemy,
-    health: Health,
-    attack: ContactAttack,
-    steering: AgentSteering,
-    flippable: FlippableSprite,
-    velocity: Velocity,
-    transform: Transform,
-    body: RigidBody,
-    collider: Collider,
-    sprite: Sprite,
-    locked_axes: LockedAxes,
-    mass: ColliderMassProperties,
-    sleeping: Sleeping,
+pub fn skeleton_sprite(monster_assets: &MonsterAssets) -> Sprite {
+    Sprite::from_atlas_image(
+        monster_assets.sprite.clone(),
+        TextureAtlas {
+            layout: monster_assets.texture_atlas_layout.clone(),
+            index: SKELETON_SPRITE_INDEX,
+        },
+    )
 }
 
-impl Default for SkeletonBundle {
-    fn default() -> Self {
-        SkeletonBundle {
-            enemy: Enemy,
-            health: Health { point: 10. },
-            attack: ContactAttack {
-                damage: 20.,
-                cooldown: Timer::from_seconds(0.3, TimerMode::Once),
-            },
-            steering: AgentSteering {
-                max_speed: 100.,
-                max_accel: 500.,
-            },
-            flippable: FlippableSprite,
-            velocity: Velocity::default(),
-            transform: Transform::default(),
-            body: RigidBody::Dynamic,
-            collider: Collider::ball(9.),
-            sprite: Sprite::default(),
-            locked_axes: LockedAxes::ROTATION_LOCKED,
-            mass: ColliderMassProperties::Density(0.1),
-            sleeping: Sleeping::disabled(),
-        }
-    }
+pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
+    (
+        Enemy,
+        Health { point: 10. },
+        ContactAttack {
+            damage: 20.,
+            cooldown: Timer::from_seconds(0.3, TimerMode::Once),
+        },
+        AgentSteering {
+            max_speed: 100.,
+            max_accel: 500.,
+        },
+        FlippableSprite,
+        Velocity::default(),
+        position,
+        RigidBody::Dynamic,
+        Collider::ball(9.),
+        LockedAxes::ROTATION_LOCKED,
+        ColliderMassProperties::Density(0.1),
+        Sleeping::disabled(),
+        skeleton_sprite(monster_assets),
+    )
 }
 
 pub fn on_spawn_skeleton(
@@ -72,8 +65,7 @@ pub fn on_spawn_skeleton(
     spawners_query: Query<&Transform, With<SkeletonSpawner>>,
     player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    monster_assets: Res<MonsterAssets>,
 ) {
     let Ok(level_id) = level_query.single() else {
         return;
@@ -84,10 +76,6 @@ pub fn on_spawn_skeleton(
     };
 
     let player_position = player_transform.translation.xy();
-
-    let texture = asset_server.load("tileset/32rogues/monsters.png");
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 12, 13, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     let Some(furthest_spawner) = spawners_query
         .iter()
@@ -111,22 +99,15 @@ pub fn on_spawn_skeleton(
         skeleton_position.translation.xyz()
     );
 
-    commands.entity(level_id).with_child(SkeletonBundle {
-        transform: skeleton_position,
-        sprite: Sprite::from_atlas_image(
-            texture.clone(),
-            TextureAtlas {
-                layout: texture_atlas_layout.clone(),
-                index: SKELETON_SPRITE_INDEX,
-            },
-        ),
-        ..default()
-    });
+    commands
+        .entity(level_id)
+        .with_child(skeleton(&monster_assets, skeleton_position));
 }
 
 impl Plugin for SkeletonPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<SkeletonSpawnerBundle>("Skeleton_Spawner")
+            .load_resource::<MonsterAssets>()
             .add_observer(on_spawn_skeleton);
     }
 }

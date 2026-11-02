@@ -46,16 +46,40 @@ pub struct WeaponProjectileCount {
     pub count: usize,
 }
 
-#[derive(Bundle)]
-pub struct ThrowingWeaponBundle {
-    weapon: Weapon,
-    range: WeaponRange,
-    cooldown: WeaponCooldown,
-    damage: WeaponDamage,
-    projectile_range: WeaponProjectileRange,
-    projectile_count: WeaponProjectileCount,
-    projectile_size: WeaponProjectileSize,
-    projectile_speed: WeaponProjectileSpeed,
+pub fn throwable_weapon(
+    weapon_range: f32,
+    weapon_cooldown: Duration,
+    weapon_damage: f32,
+    projectile_range: f32,
+    projectile_count: usize,
+    projectile_size: f32,
+    projectile_speed: f32,
+) -> impl Bundle {
+    (
+        Weapon,
+        WeaponRange {
+            range: weapon_range,
+        },
+        WeaponCooldown {
+            cooldown: Timer::new(weapon_cooldown, TimerMode::Once),
+        },
+        WeaponDamage {
+            damage: weapon_damage,
+        },
+        WeaponProjectileRange {
+            range: projectile_range,
+        },
+        WeaponProjectileCount {
+            max: projectile_count,
+            count: 0,
+        },
+        WeaponProjectileSize {
+            size: projectile_size,
+        },
+        WeaponProjectileSpeed {
+            speed: projectile_speed,
+        },
+    )
 }
 
 fn throw_projectiles(
@@ -119,20 +143,15 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
         return;
     };
 
-    commands
-        .entity(player_entity)
-        .with_child(ThrowingWeaponBundle {
-            weapon: Weapon,
-            range: WeaponRange { range: 200. },
-            cooldown: WeaponCooldown {
-                cooldown: Timer::new(Duration::from_millis(750), TimerMode::Once),
-            },
-            damage: WeaponDamage { damage: 5.0 },
-            projectile_range: WeaponProjectileRange { range: 100.0 },
-            projectile_count: WeaponProjectileCount { max: 1, count: 0 },
-            projectile_size: WeaponProjectileSize { size: 10.0 },
-            projectile_speed: WeaponProjectileSpeed { speed: 300.0 },
-        });
+    commands.entity(player_entity).with_child(throwable_weapon(
+        200.0,
+        Duration::from_millis(750),
+        5.0,
+        100.0,
+        1,
+        5.0,
+        300.0,
+    ));
 }
 
 impl Plugin for WeaponPlugin {

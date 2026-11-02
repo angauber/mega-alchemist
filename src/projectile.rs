@@ -1,4 +1,6 @@
+use crate::asset_tracking::LoadResource;
 use crate::player::Player;
+use crate::sprite_assets::ItemAssets;
 use crate::weapon::{Weapon, WeaponProjectileSize, WeaponProjectileSpeed};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -6,15 +8,39 @@ use bevy_rapier2d::prelude::*;
 
 pub struct ProjectilePlugin;
 
-#[derive(Bundle, Debug)]
-pub struct ProjectileBundle {
+const KNIFE_SPRITE_INDEX: usize = 0;
+
+pub fn knife_sprite(item_assets: &ItemAssets) -> Sprite {
+    Sprite::from_atlas_image(
+        item_assets.sprite.clone(),
+        TextureAtlas {
+            layout: item_assets.texture_atlas_layout.clone(),
+            index: KNIFE_SPRITE_INDEX,
+        },
+    )
+}
+
+pub fn projectile(transform: Transform, velocity: Velocity, collider: Collider) -> impl Bundle {
+    (
+        transform,
+        velocity,
+        collider,
+        RigidBody::Dynamic,
+        Sensor,
+        ActiveEvents::COLLISION_EVENTS,
+    )
+}
+
+pub fn knife_projectile(
     transform: Transform,
-    body: RigidBody,
     velocity: Velocity,
     collider: Collider,
-    sensor: Sensor,
-    active_events: ActiveEvents,
-    sprite: Sprite,
+    item_assets: &ItemAssets,
+) -> impl Bundle {
+    (
+        projectile(transform, velocity, collider),
+        knife_sprite(item_assets),
+    )
 }
 
 #[derive(Event)]
@@ -30,8 +56,7 @@ fn on_throw_projectile(
     projectile_query: Query<(&WeaponProjectileSize, &WeaponProjectileSpeed), With<Weapon>>,
     player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    items_assets: Res<ItemAssets>,
 ) {
     info!(
         "Projectile throw triggered by weapon {} for enemy {}",
@@ -68,31 +93,17 @@ fn on_throw_projectile(
 
     let projectile_collider = Collider::ball(projectile_size.size / 2.);
 
-    let texture = asset_server.load("tileset/32rogues/items.png");
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 11, 26, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-
-    let projectile_sprite = Sprite::from_atlas_image(
-        texture.clone(),
-        TextureAtlas {
-            layout: texture_atlas_layout.clone(),
-            index: 0,
-        },
-    );
-
-    commands.entity(level_id).with_child(ProjectileBundle {
-        transform: projectile_transform,
-        body: RigidBody::Dynamic,
-        velocity: projectile_velocity,
-        collider: projectile_collider,
-        sensor: Sensor,
-        active_events: ActiveEvents::COLLISION_EVENTS,
-        sprite: projectile_sprite,
-    });
+    commands.entity(level_id).with_child(knife_projectile(
+        projectile_transform,
+        projectile_velocity,
+        projectile_collider,
+        &items_assets,
+    ));
 }
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_throw_projectile);
+        app.load_resource::<ItemAssets>()
+            .add_observer(on_throw_projectile);
     }
 }
