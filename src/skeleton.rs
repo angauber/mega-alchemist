@@ -40,7 +40,7 @@ pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bun
         Enemy,
         Health { point: 10. },
         ContactAttack {
-            damage: 20.,
+            damage: 10.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),
         },
         AgentSteering {
@@ -51,7 +51,7 @@ pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bun
         Velocity::default(),
         position,
         RigidBody::Dynamic,
-        Collider::ball(9.),
+        Collider::ball(7.),
         LockedAxes::ROTATION_LOCKED,
         ColliderMassProperties::Density(0.1),
         Sleeping::disabled(),

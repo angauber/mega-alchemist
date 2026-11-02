@@ -1,3 +1,4 @@
+use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
 use crate::health::Health;
 use crate::player::Player;
@@ -68,31 +69,22 @@ fn attack_contact_system(
 
 fn attacking_player_damage_system(
     mut commands: Commands,
-    mut player_query: Query<(&mut Health, &Transform), With<Player>>,
-    mut render_ui_text_event: MessageWriter<RenderUiText>,
+    player_query: Query<Entity, With<Player>>,
     attackers_query: Query<(Entity, &ContactAttack), (With<Attacking>, Without<AttackCooldown>)>,
 ) {
-    let Ok((mut player_health, player_transform)) = player_query.single_mut() else {
+    let Ok(player_entity) = player_query.single() else {
         return;
     };
 
     for (attacker_entity, contact_attack) in &attackers_query {
-        player_health.point -= contact_attack.damage;
         commands.entity(attacker_entity).insert(AttackCooldown {
             duration: contact_attack.cooldown.clone(),
         });
 
-        let mut text_transform = *player_transform;
-
-        text_transform.translation.y += 20.;
-
-        render_ui_text_event.write(RenderUiText {
-            text: format!("-{} HP", contact_attack.damage).into(),
-            font_size: 8.,
-            color: Color::linear_rgb(1.0, 0.0, 0.0),
-            duration: Duration::from_millis(250),
-            transform: Some(text_transform),
-        });
+        commands.trigger(ApplyDamage {
+            entity: player_entity,
+            damage: contact_attack.damage,
+        })
     }
 }
 

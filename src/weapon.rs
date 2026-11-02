@@ -11,12 +11,16 @@ pub struct WeaponPlugin;
 pub struct Weapon;
 
 #[derive(Component)]
+pub struct ThrowableWeapon;
+
+#[derive(Component)]
 pub struct WeaponRange {
     pub range: f32,
 }
 
 #[derive(Component)]
 pub struct WeaponCooldown {
+    pub minimum: Timer,
     pub cooldown: Timer,
 }
 
@@ -28,11 +32,6 @@ pub struct WeaponDamage {
 #[derive(Component)]
 pub struct WeaponProjectileSize {
     pub size: f32,
-}
-
-#[derive(Component)]
-pub struct WeaponProjectileRange {
-    pub range: f32,
 }
 
 #[derive(Component)]
@@ -50,24 +49,22 @@ pub fn throwable_weapon(
     weapon_range: f32,
     weapon_cooldown: Duration,
     weapon_damage: f32,
-    projectile_range: f32,
     projectile_count: usize,
     projectile_size: f32,
     projectile_speed: f32,
 ) -> impl Bundle {
     (
         Weapon,
+        ThrowableWeapon,
         WeaponRange {
             range: weapon_range,
         },
         WeaponCooldown {
+            minimum: Timer::new(Duration::from_millis(80), TimerMode::Once),
             cooldown: Timer::new(weapon_cooldown, TimerMode::Once),
         },
         WeaponDamage {
             damage: weapon_damage,
-        },
-        WeaponProjectileRange {
-            range: projectile_range,
         },
         WeaponProjectileCount {
             max: projectile_count,
@@ -85,8 +82,7 @@ pub fn throwable_weapon(
 fn throw_projectiles(
     mut commands: Commands,
     player_position: Query<&Transform, With<Player>>,
-    weapon_query: Query<Entity, With<Weapon>>,
-    weapon_range_query: Query<&WeaponRange, With<Weapon>>,
+    weapon_query: Query<(Entity, &WeaponRange, &WeaponDamage), With<Weapon>>,
     mut weapon_projectile_count_query: Query<&mut WeaponProjectileCount, With<Weapon>>,
     mut weapon_cooldown_query: Query<&mut WeaponCooldown, With<Weapon>>,
     enemies_query: Query<(Entity, &Transform), With<Enemy>>,
@@ -96,18 +92,21 @@ fn throw_projectiles(
         return;
     };
 
-    for weapon in weapon_query {
+    for (weapon, weapon_range, weapon_damage) in weapon_query {
         let Ok(mut weapon_cooldown) = weapon_cooldown_query.get_mut(weapon) else {
             continue;
         };
 
+        weapon_cooldown.minimum.tick(time.delta());
         weapon_cooldown.cooldown.tick(time.delta());
 
         if !weapon_cooldown.cooldown.is_finished() {
             continue;
         };
+        if !weapon_cooldown.minimum.is_finished() {
+            continue;
+        };
 
-        let weapon_range = weapon_range_query.get(weapon).unwrap();
         let mut projectile_count = weapon_projectile_count_query.get_mut(weapon).unwrap();
 
         let in_range_enemies = enemies_query
@@ -124,7 +123,10 @@ fn throw_projectiles(
                 weapon,
                 target: enemy,
                 target_transform: *enemy_transform,
+                range: weapon_range.range,
+                damage: weapon_damage.damage,
             });
+            weapon_cooldown.minimum.reset();
 
             projectile_count.count += 1;
 
@@ -146,8 +148,7 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
     commands.entity(player_entity).with_child(throwable_weapon(
         200.0,
         Duration::from_millis(750),
-        5.0,
-        100.0,
+        10.0,
         1,
         5.0,
         300.0,

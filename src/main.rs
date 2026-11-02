@@ -1,3 +1,5 @@
+extern crate core;
+
 use crate::agent::AgentPlugin;
 use crate::animation::AnimationPlugin;
 use crate::attack::AttackPlugin;
@@ -9,6 +11,7 @@ use crate::skeleton::SkeletonPlugin;
 use crate::ui::UiPlugin;
 use crate::wall::WallPlugin;
 
+use crate::damage::DamagePlugin;
 use crate::game::GamePlugin;
 use crate::spawn_manager::SpawnManagerPlugin;
 use crate::weapon::WeaponPlugin;
@@ -20,6 +23,7 @@ mod animation;
 mod asset_tracking;
 mod attack;
 mod camera;
+mod damage;
 mod game;
 mod health;
 mod physics;
@@ -55,6 +59,7 @@ fn main() {
         .add_plugins(SpawnManagerPlugin)
         .add_plugins(AgentPlugin)
         .add_plugins(SkeletonPlugin)
+        .add_plugins(DamagePlugin)
         .add_plugins(AttackPlugin)
         .add_plugins(HealthPlugin)
         .add_plugins(WeaponPlugin)
