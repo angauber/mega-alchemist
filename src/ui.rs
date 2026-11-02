@@ -75,10 +75,7 @@ fn render_ui_text(
 
         default_transform.translation.y += 75.0;
 
-        info!(
-            "spawning text ui element `{}`",
-            *event.text.clone(),
-        );
+        info!("spawning text ui element `{}`", *event.text.clone(),);
 
         let mut text_transform = event.transform.unwrap_or(default_transform);
 

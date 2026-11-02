@@ -1,12 +1,22 @@
-use crate::physics::{PausePhysics, ResumePhysics};
+use crate::health::Health;
+use crate::player::Player;
 use crate::ui::{RenderUiText, UiTextBundle};
+use bevy::prelude::KeyCode::Space;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use std::time::Duration;
-use crate::health::Health;
-use crate::player::Player;
 
 pub struct GamePlugin;
+
+#[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
+pub enum GameState {
+    #[default]
+    InGame,
+    Paused,
+}
+
+#[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct InGameSystems;
 
 #[derive(Event)]
 pub struct GameOver;
@@ -41,22 +51,26 @@ fn spawn_game_main_text_ui_node(
         return;
     };
 
-    info!("adding main text game ui with player health: {:?}", player_health);
+    info!(
+        "adding main text game ui with player health: {:?}",
+        player_health
+    );
 
     let font_handle = assets.load("fonts/Pixuf.ttf");
 
-    commands.spawn((
-        GameMainTextUiNode,
-        Node {
-            position_type: PositionType::Absolute,
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
-            top: Val::Px(50.0),
-            left: Val::Px(50.0),
-            ..default()
-        }
-    )).with_child(
-        (
+    commands
+        .spawn((
+            GameMainTextUiNode,
+            Node {
+                position_type: PositionType::Absolute,
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                top: Val::Px(50.0),
+                left: Val::Px(50.0),
+                ..default()
+            },
+        ))
+        .with_child((
             PlayerHealth,
             UiTextBundle {
                 text: format!("{} HP", player_health.point).into(),
@@ -67,9 +81,8 @@ fn spawn_game_main_text_ui_node(
                     ..default()
                 },
                 layout: TextLayout::justify(Justify::Center),
-            }
-        )
-    );
+            },
+        ));
 }
 
 fn update_player_health_text(
@@ -92,9 +105,10 @@ fn on_game_over(
     mut commands: Commands,
     mut ui_text_messages: MessageWriter<RenderUiText>,
     main_text_ui_query: Query<Entity, With<GameMainTextUiNode>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
+    next_state.set(GameState::Paused);
     commands.spawn(GameOverTimer::new(Duration::from_secs(4)));
-    commands.trigger(PausePhysics);
 
     if let Ok(game_ui) = main_text_ui_query.single() {
         commands.entity(game_ui).despawn();
@@ -112,6 +126,7 @@ fn on_game_over_with_delay(
     mut commands: Commands,
     mut level_selection: ResMut<LevelSelection>,
     ldtk_projects: Query<Entity, With<LdtkProjectHandle>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     *level_selection = LevelSelection::index(0);
 
@@ -119,7 +134,7 @@ fn on_game_over_with_delay(
         .entity(ldtk_projects.single().unwrap())
         .insert(Respawn);
 
-    commands.trigger(ResumePhysics);
+    next_state.set(GameState::InGame);
 }
 
 fn trigger_game_over_with_delay(
@@ -139,12 +154,27 @@ fn trigger_game_over_with_delay(
     }
 }
 
+fn toggle_game_state_on_space(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if keyboard_input.just_pressed(Space) {
+        next_state.set(match current_state.get() {
+            GameState::InGame => GameState::Paused,
+            GameState::Paused => GameState::InGame,
+        });
+    }
+}
+
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app
+        app.init_state::<GameState>()
+            .configure_sets(Update, InGameSystems.run_if(in_state(GameState::InGame)))
             .add_observer(on_game_over)
             .add_observer(on_game_over_with_delay)
             .add_systems(PreUpdate, trigger_game_over_with_delay)
+            .add_systems(Update, toggle_game_state_on_space)
             .add_systems(Update, spawn_game_main_text_ui_node)
             .add_systems(Update, update_player_health_text);
     }

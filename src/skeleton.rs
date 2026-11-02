@@ -1,11 +1,11 @@
-use bevy::prelude::*;
-use bevy_ecs_ldtk::prelude::*;
-use bevy_rapier2d::prelude::*;
 use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
 use crate::attack::ContactAttack;
 use crate::health::Health;
 use crate::player::Player;
+use bevy::prelude::*;
+use bevy_ecs_ldtk::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 pub struct SkeletonPlugin;
 
@@ -45,8 +45,14 @@ impl Default for SkeletonBundle {
         SkeletonBundle {
             enemy: Enemy,
             health: Health { point: 10. },
-            attack: ContactAttack { damage: 20., cooldown: Timer::from_seconds(0.3, TimerMode::Once) },
-            steering: AgentSteering { max_speed: 100., max_accel: 500. },
+            attack: ContactAttack {
+                damage: 20.,
+                cooldown: Timer::from_seconds(0.3, TimerMode::Once),
+            },
+            steering: AgentSteering {
+                max_speed: 100.,
+                max_accel: 500.,
+            },
             flippable: FlippableSprite,
             velocity: Velocity::default(),
             transform: Transform::default(),
@@ -59,7 +65,6 @@ impl Default for SkeletonBundle {
         }
     }
 }
-
 
 pub fn on_spawn_skeleton(
     _event: On<SpawnSkeleton>,
@@ -86,7 +91,12 @@ pub fn on_spawn_skeleton(
 
     let Some(furthest_spawner) = spawners_query
         .iter()
-        .sort_by::<&Transform>(|spawner_a, spawner_b| player_position.distance(spawner_a.translation.xy()).total_cmp(&player_position.distance(spawner_b.translation.xy()))).next_back()
+        .sort_by::<&Transform>(|spawner_a, spawner_b| {
+            player_position
+                .distance(spawner_a.translation.xy())
+                .total_cmp(&player_position.distance(spawner_b.translation.xy()))
+        })
+        .next_back()
     else {
         warn!("no SkeletonSpawner found");
         return;
@@ -96,26 +106,27 @@ pub fn on_spawn_skeleton(
 
     skeleton_position.translation.z = 5.0;
 
-    info!("Spawning skeleton at {:?}", skeleton_position.translation.xyz());
+    info!(
+        "Spawning skeleton at {:?}",
+        skeleton_position.translation.xyz()
+    );
 
-    commands.entity(level_id)
-        .with_child(SkeletonBundle {
-            transform: skeleton_position,
-            sprite: Sprite::from_atlas_image(
-                texture.clone(),
-                TextureAtlas {
-                    layout: texture_atlas_layout.clone(),
-                    index: SKELETON_SPRITE_INDEX,
-                }
-            ),
-            ..default()
-        });
+    commands.entity(level_id).with_child(SkeletonBundle {
+        transform: skeleton_position,
+        sprite: Sprite::from_atlas_image(
+            texture.clone(),
+            TextureAtlas {
+                layout: texture_atlas_layout.clone(),
+                index: SKELETON_SPRITE_INDEX,
+            },
+        ),
+        ..default()
+    });
 }
 
 impl Plugin for SkeletonPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_ldtk_entity::<SkeletonSpawnerBundle>("Skeleton_Spawner")
+        app.register_ldtk_entity::<SkeletonSpawnerBundle>("Skeleton_Spawner")
             .add_observer(on_spawn_skeleton);
     }
 }

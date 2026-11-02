@@ -1,14 +1,10 @@
+use crate::game::GameState;
 use bevy::app::*;
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 pub struct PhysicsPlugin;
-
-#[derive(Event)]
-pub struct PausePhysics;
-#[derive(Event)]
-pub struct ResumePhysics;
 
 const PIXELS_PER_METER: f32 = 16.0;
 
@@ -20,28 +16,32 @@ fn rapier_config(mut rapier_config: Query<&mut RapierConfiguration>) {
     config.gravity = Vec2::ZERO;
 }
 
-fn on_pause_physics(_event: On<PausePhysics>, mut rapier_config: Query<&mut RapierConfiguration>) {
-    let mut config = rapier_config.single_mut().unwrap();
+fn pause_physics(mut rapier_config: Query<&mut RapierConfiguration>) {
+    let Ok(mut config) = rapier_config.single_mut() else {
+        return;
+    };
+
     config.physics_pipeline_active = false;
     info!("Physics simulation paused");
 }
 
-fn on_resume_physics(
-    _event: On<ResumePhysics>,
-    mut rapier_config: Query<&mut RapierConfiguration>,
-) {
-    let mut config = rapier_config.single_mut().unwrap();
+fn resume_physics(mut rapier_config: Query<&mut RapierConfiguration>) {
+    let Ok(mut config) = rapier_config.single_mut() else {
+        return;
+    };
+
     config.physics_pipeline_active = true;
     info!("Physics simulation resumed");
 }
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(PIXELS_PER_METER))
-            .add_observer(on_pause_physics)
-            .add_observer(on_resume_physics)
-            .add_systems(Startup, rapier_config);
+        app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
+            PIXELS_PER_METER,
+        ))
+        .add_systems(OnEnter(GameState::InGame), resume_physics)
+        .add_systems(OnEnter(GameState::Paused), pause_physics)
+        .add_systems(Startup, rapier_config);
 
         #[cfg(feature = "dev_tools")]
         {

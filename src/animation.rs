@@ -1,3 +1,4 @@
+use crate::game::InGameSystems;
 use bevy::prelude::*;
 use bevy_rapier2d::dynamics::Velocity;
 
@@ -7,7 +8,7 @@ pub struct AnimationPlugin;
 pub struct FlippableSprite;
 
 pub fn animate_flippable_sprite(
-    mut sprite_query: Query<(&mut Sprite, &Velocity), With<FlippableSprite>>
+    mut sprite_query: Query<(&mut Sprite, &Velocity), With<FlippableSprite>>,
 ) {
     for (mut sprite, velocity) in sprite_query.iter_mut() {
         if velocity.linear.x > 0.0 {
@@ -22,6 +23,6 @@ pub fn animate_flippable_sprite(
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, animate_flippable_sprite);
+        app.add_systems(Update, animate_flippable_sprite.in_set(InGameSystems));
     }
 }

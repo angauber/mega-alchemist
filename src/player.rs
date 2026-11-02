@@ -1,8 +1,9 @@
+use crate::animation::FlippableSprite;
+use crate::game::InGameSystems;
+use crate::health::Health;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
-use crate::animation::FlippableSprite;
-use crate::health::Health;
 
 pub struct PlayerPlugin;
 
@@ -72,15 +73,27 @@ fn player_movement(
 
     let mut dir = Vec2::ZERO;
 
-    if keyboard_input.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) { dir.x = -1. };
-    if keyboard_input.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) { dir.x = 1. };
-    if keyboard_input.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) { dir.y = 1. };
-    if keyboard_input.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) { dir.y = -1. };
+    if keyboard_input.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+        dir.x = -1.
+    };
+    if keyboard_input.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+        dir.x = 1.
+    };
+    if keyboard_input.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+        dir.y = 1.
+    };
+    if keyboard_input.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+        dir.y = -1.
+    };
 
     let dir = dir.normalize_or_zero();
 
     let target = dir * MAX_SPEED;
-    let rate = if dir == Vec2::ZERO { DECELERATION } else { ACCELERATION };
+    let rate = if dir == Vec2::ZERO {
+        DECELERATION
+    } else {
+        ACCELERATION
+    };
 
     player_velocity.linear = player_velocity.linear.move_towards(target, rate * dt);
 }
@@ -88,6 +101,6 @@ fn player_movement(
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<PlayerBundle>("Player")
-            .add_systems(Update, player_movement);
+            .add_systems(Update, player_movement.in_set(InGameSystems));
     }
 }

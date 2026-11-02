@@ -1,6 +1,7 @@
+use crate::game::InGameSystems;
+use crate::player::Player;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use crate::player::Player;
 
 pub struct AgentPlugin;
 
@@ -38,6 +39,6 @@ pub fn agent_steering_system(
 
 impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, agent_steering_system);
+        app.add_systems(Update, agent_steering_system.in_set(InGameSystems));
     }
 }

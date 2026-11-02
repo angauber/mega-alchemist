@@ -1,8 +1,9 @@
-use std::time::Duration;
-use bevy::prelude::*;
 use crate::agent::Enemy;
+use crate::game::InGameSystems;
 use crate::player::Player;
 use crate::projectile::{ProjectilePlugin, ThrowProjectile};
+use bevy::prelude::*;
+use std::time::Duration;
 
 pub struct WeaponPlugin;
 
@@ -45,7 +46,6 @@ pub struct WeaponProjectileCount {
     pub count: usize,
 }
 
-
 #[derive(Bundle)]
 pub struct ThrowingWeaponBundle {
     weapon: Weapon,
@@ -73,18 +73,27 @@ fn throw_projectiles(
     };
 
     for weapon in weapon_query {
-        let Ok(mut weapon_cooldown) = weapon_cooldown_query.get_mut(weapon) else { continue };
+        let Ok(mut weapon_cooldown) = weapon_cooldown_query.get_mut(weapon) else {
+            continue;
+        };
 
         weapon_cooldown.cooldown.tick(time.delta());
 
-        if !weapon_cooldown.cooldown.is_finished() { continue };
+        if !weapon_cooldown.cooldown.is_finished() {
+            continue;
+        };
 
         let weapon_range = weapon_range_query.get(weapon).unwrap();
         let mut projectile_count = weapon_projectile_count_query.get_mut(weapon).unwrap();
 
         let in_range_enemies = enemies_query
             .iter()
-            .filter(|(_enemy_entity, enemy_transform)| player_position.translation.distance(enemy_transform.translation) < weapon_range.range);
+            .filter(|(_enemy_entity, enemy_transform)| {
+                player_position
+                    .translation
+                    .distance(enemy_transform.translation)
+                    < weapon_range.range
+            });
 
         'enemy: for (enemy, enemy_transform) in in_range_enemies {
             commands.trigger(ThrowProjectile {
@@ -105,32 +114,32 @@ fn throw_projectiles(
     }
 }
 
-fn spawn_player_weapon(
-    mut commands: Commands,
-    player_query: Query<Entity, Added<Player>>,
-) {
+fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added<Player>>) {
     let Ok(player_entity) = player_query.single() else {
         return;
     };
 
-    commands.entity(player_entity).with_child(ThrowingWeaponBundle {
-        weapon: Weapon,
-        range: WeaponRange { range: 200. },
-        cooldown: WeaponCooldown { cooldown: Timer::new(Duration::from_millis(750), TimerMode::Once) },
-        damage: WeaponDamage { damage: 5.0 },
-        projectile_range: WeaponProjectileRange{ range: 100.0 },
-        projectile_count: WeaponProjectileCount { max: 1, count: 0 },
-        projectile_size: WeaponProjectileSize { size: 10.0 },
-        projectile_speed: WeaponProjectileSpeed { speed: 300.0 },
-    });
+    commands
+        .entity(player_entity)
+        .with_child(ThrowingWeaponBundle {
+            weapon: Weapon,
+            range: WeaponRange { range: 200. },
+            cooldown: WeaponCooldown {
+                cooldown: Timer::new(Duration::from_millis(750), TimerMode::Once),
+            },
+            damage: WeaponDamage { damage: 5.0 },
+            projectile_range: WeaponProjectileRange { range: 100.0 },
+            projectile_count: WeaponProjectileCount { max: 1, count: 0 },
+            projectile_size: WeaponProjectileSize { size: 10.0 },
+            projectile_speed: WeaponProjectileSpeed { speed: 300.0 },
+        });
 }
-
 
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(ProjectilePlugin)
-            .add_systems(Update, spawn_player_weapon)
-            .add_systems(Update, throw_projectiles);
+        app.add_plugins(ProjectilePlugin).add_systems(
+            Update,
+            (spawn_player_weapon, throw_projectiles).in_set(InGameSystems),
+        );
     }
 }

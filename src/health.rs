@@ -1,12 +1,12 @@
-use bevy::prelude::*;
-use crate::game::GameOver;
+use crate::game::{GameOver, InGameSystems};
 use crate::player::Player;
+use bevy::prelude::*;
 
 pub struct HealthPlugin;
 
 #[derive(Component, Default, Debug)]
 pub struct Health {
-    pub point: f32
+    pub point: f32,
 }
 
 pub fn entities_health_system(
@@ -27,6 +27,6 @@ pub fn entities_health_system(
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, entities_health_system);
+        app.add_systems(Update, entities_health_system.in_set(InGameSystems));
     }
 }
