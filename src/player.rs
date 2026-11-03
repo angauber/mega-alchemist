@@ -41,7 +41,7 @@ fn player_health(_: &EntityInstance) -> Health {
 }
 
 fn player_collider(_: &EntityInstance) -> Collider {
-    Collider::capsule(Vec2::new(0., -8.), Vec2::new(0., 8.), 8.0)
+    Collider::capsule(Vec2::new(0., -9.), Vec2::new(0., 4.), 6.0)
 }
 
 fn player_rigid_body(_: &EntityInstance) -> RigidBody {

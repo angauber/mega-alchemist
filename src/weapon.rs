@@ -157,7 +157,7 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
         10.0,
         1,
         5.0,
-        300.0,
+        200.0,
     ));
 }
 

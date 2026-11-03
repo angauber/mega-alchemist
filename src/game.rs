@@ -3,10 +3,14 @@ use crate::player::Player;
 use crate::ui::{RenderUiText, UiTextBundle};
 use bevy::prelude::KeyCode::Space;
 use bevy::prelude::*;
+use bevy::time::Stopwatch;
 use bevy_ecs_ldtk::prelude::*;
 use std::time::Duration;
 
 pub struct GamePlugin;
+
+#[derive(Resource, Default)]
+pub struct GameClock(Stopwatch);
 
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub enum GameState {
@@ -32,7 +36,10 @@ struct GameOverTimer {
 pub struct GameMainTextUiNode;
 
 #[derive(Component, Default)]
-pub struct PlayerHealth;
+pub struct PlayerHealthUI;
+
+#[derive(Component, Default)]
+pub struct GameClockUI;
 
 impl GameOverTimer {
     fn new(duration: Duration) -> Self {
@@ -45,6 +52,7 @@ impl GameOverTimer {
 fn spawn_game_main_text_ui_node(
     mut commands: Commands,
     player_query: Query<&Health, Added<Player>>,
+    game_clock: Res<GameClock>,
     assets: Res<AssetServer>,
 ) {
     let Ok(player_health) = player_query.single() else {
@@ -65,19 +73,33 @@ fn spawn_game_main_text_ui_node(
                 position_type: PositionType::Absolute,
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
+                align_items: AlignItems::FlexStart,
                 top: Val::Px(50.0),
                 left: Val::Px(50.0),
                 ..default()
             },
         ))
         .with_child((
-            PlayerHealth,
+            PlayerHealthUI,
             UiTextBundle {
-                text: format!("{} HP", player_health.point).into(),
+                text: format!("HP {}", player_health.point).into(),
+                color: TextColor(Color::WHITE),
+                font: TextFont {
+                    font: font_handle.clone().into(),
+                    font_size: FontSize::Px(64.),
+                    ..default()
+                },
+                layout: TextLayout::justify(Justify::Center),
+            },
+        ))
+        .with_child((
+            GameClockUI,
+            UiTextBundle {
+                text: format!("Time {:.2}", game_clock.0.elapsed_secs()).into(),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
                     font: font_handle.into(),
-                    font_size: FontSize::Px(64.),
+                    font_size: FontSize::Px(32.),
                     ..default()
                 },
                 layout: TextLayout::justify(Justify::Center),
@@ -87,7 +109,7 @@ fn spawn_game_main_text_ui_node(
 
 fn update_player_health_text(
     player_health_query: Query<&Health, (Changed<Health>, With<Player>)>,
-    mut player_health_text_query: Query<&mut Text, With<PlayerHealth>>,
+    mut player_health_text_query: Query<&mut Text, With<PlayerHealthUI>>,
 ) {
     let Ok(player_health) = player_health_query.single() else {
         return;
@@ -127,7 +149,11 @@ fn on_game_over_with_delay(
     mut level_selection: ResMut<LevelSelection>,
     ldtk_projects: Query<Entity, With<LdtkProjectHandle>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut game_clock: ResMut<GameClock>,
 ) {
+    info!("respawning level !");
+    game_clock.0.reset();
+
     *level_selection = LevelSelection::index(0);
 
     commands
@@ -154,6 +180,22 @@ fn trigger_game_over_with_delay(
     }
 }
 
+fn tick_game_clock(
+    mut game_clock: ResMut<GameClock>,
+    time: Res<Time>,
+    mut game_clock_text_query: Query<&mut Text, With<GameClockUI>>,
+) {
+    game_clock.0.tick(time.delta());
+
+    let Ok(mut game_clock_text) = game_clock_text_query.single_mut() else {
+        return;
+    };
+
+    game_clock_text.0 = format!("TIME {:.2}", game_clock.0.elapsed_secs());
+}
+
+fn update_game_clock_text() {}
+
 fn toggle_game_state_on_space(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     current_state: Res<State<GameState>>,
@@ -171,11 +213,21 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
             .configure_sets(Update, InGameSystems.run_if(in_state(GameState::InGame)))
+            .configure_sets(PreUpdate, InGameSystems.run_if(in_state(GameState::InGame)))
+            .init_resource::<GameClock>()
             .add_observer(on_game_over)
             .add_observer(on_game_over_with_delay)
             .add_systems(PreUpdate, trigger_game_over_with_delay)
+            .add_systems(PreUpdate, tick_game_clock.in_set(InGameSystems))
             .add_systems(Update, toggle_game_state_on_space)
-            .add_systems(Update, spawn_game_main_text_ui_node)
-            .add_systems(Update, update_player_health_text);
+            .add_systems(
+                Update,
+                (
+                    spawn_game_main_text_ui_node,
+                    update_player_health_text,
+                    update_game_clock_text,
+                )
+                    .in_set(InGameSystems),
+            );
     }
 }

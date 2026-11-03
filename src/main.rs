@@ -4,19 +4,20 @@ use crate::agent::AgentPlugin;
 use crate::animation::AnimationPlugin;
 use crate::attack::AttackPlugin;
 use crate::camera::CameraPlugin;
+use crate::damage::DamagePlugin;
+use crate::game::GamePlugin;
 use crate::health::HealthPlugin;
 use crate::physics::PhysicsPlugin;
 use crate::player::PlayerPlugin;
+use crate::spawn_manager::SpawnManagerPlugin;
 use crate::spawner::SpawnerPlugin;
 use crate::ui::UiPlugin;
 use crate::wall::WallPlugin;
-
-use crate::damage::DamagePlugin;
-use crate::game::GamePlugin;
-use crate::spawn_manager::SpawnManagerPlugin;
 use crate::weapon::WeaponPlugin;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
+#[cfg(feature = "dev_tools")]
+use crate::debug::DebugPlugin;
 
 mod agent;
 mod animation;
@@ -37,9 +38,13 @@ mod sprite_assets;
 mod ui;
 mod wall;
 mod weapon;
+#[cfg(feature = "dev_tools")]
+mod debug;
 
 fn main() {
-    App::new()
+    let mut app = App::new();
+    
+    app
         .add_plugins(
             DefaultPlugins
                 .set(ImagePlugin::default_nearest())
@@ -68,8 +73,15 @@ fn main() {
         .add_plugins(AnimationPlugin)
         .add_plugins(UiPlugin)
         .add_systems(Startup, scene.spawn())
-        .insert_resource(LevelSelection::index(0))
-        .run();
+        .insert_resource(LevelSelection::index(0));
+
+    
+        #[cfg(feature = "dev_tools")]
+        {
+            app.add_plugins(DebugPlugin);
+        }
+        
+        app.run();
 }
 
 fn scene() -> impl Scene {

@@ -6,6 +6,7 @@ use crate::sprite_assets::MonsterAssets;
 use bevy::app::App;
 use bevy::image::TextureAtlas;
 use bevy::log::info;
+use bevy::math::Vec3;
 use bevy::prelude::{
     Bundle, Commands, Entity, Event, On, Plugin, Query, Res, Sprite, Timer, TimerMode, Transform,
     With,
@@ -34,13 +35,13 @@ pub fn skeleton_sprite(monster_assets: &MonsterAssets) -> Sprite {
 pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
     (
         Enemy,
-        Health { point: 25. },
+        Health { point: 40. },
         ContactAttack {
             damage: 25.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),
         },
         AgentSteering {
-            max_speed: 40.,
+            max_speed: 30.,
             max_accel: 300.,
         },
         FlippableSprite,
@@ -69,9 +70,10 @@ pub fn on_spawn_skeleton(
 
     info!("Spawning skeleton at {:?}", spawner_position);
 
-    commands
-        .entity(level_id)
-        .with_child(skeleton(&monster_assets, spawner_position));
+    commands.entity(level_id).with_child(skeleton(
+        &monster_assets,
+        spawner_position.with_scale(Vec3::splat(0.85)),
+    ));
 }
 
 impl Plugin for SkeletonPlugin {

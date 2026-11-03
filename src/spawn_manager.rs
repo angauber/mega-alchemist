@@ -1,11 +1,10 @@
 use crate::bat::SpawnBat;
-use crate::game::InGameSystems;
+use crate::game::{GameOver, InGameSystems};
 use crate::player::Player;
 use crate::skeleton::SpawnSkeleton;
 use crate::spawn_manager::Enemy::{Bat, Skeleton};
 use crate::spawner::Spawner;
 use bevy::prelude::*;
-use bevy_ecs_ldtk::LevelIid;
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use std::time::Duration;
@@ -45,8 +44,14 @@ impl Default for SpawnWeights {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct SpawnTicker(Timer);
+
+impl Default for SpawnTicker {
+    fn default() -> Self {
+        SpawnTicker(Timer::new(Duration::from_millis(50), TimerMode::Repeating))
+    }
+}
 
 #[derive(Resource)]
 pub struct SpawnManager {
@@ -62,7 +67,7 @@ impl Default for SpawnManager {
             weights: SpawnWeights::default(),
             memory: None,
             bank_value: 0.0,
-            bank_budget: 10.0,
+            bank_budget: 5.0,
         }
     }
 }
@@ -70,6 +75,10 @@ impl Default for SpawnManager {
 impl SpawnManager {
     pub fn bank_value(&self) -> f32 {
         self.bank_value
+    }
+
+    pub fn bank_budget(&self) -> f32 {
+        self.bank_budget
     }
 
     pub fn accumulate_bank_value(&mut self, dt: f32) {
@@ -122,19 +131,6 @@ impl SpawnManager {
             Skeleton => self.weights.skeleton,
         }
     }
-}
-
-fn setup_manager(mut commands: Commands, level_query: Query<Entity, Added<LevelIid>>) {
-    let Ok(level_id) = level_query.single() else {
-        return;
-    };
-
-    info!("Setting up manager for level {}", level_id);
-    commands.insert_resource(SpawnManager::default());
-
-    let timer = Timer::new(Duration::from_millis(50), TimerMode::Repeating);
-
-    commands.entity(level_id).with_child(SpawnTicker(timer));
 }
 
 fn accumulate_bank_value(mut spawn_manager: ResMut<SpawnManager>, time: Res<Time>) {
@@ -205,14 +201,19 @@ fn spawn_enemy(
     spawn_manager.spawned();
 }
 
+pub fn on_game_over(_event: On<GameOver>, mut spawn_manager: ResMut<SpawnManager>) {
+    info!("spawn manager reseted");
+    *spawn_manager = SpawnManager::default();
+}
+
 impl Plugin for SpawnManagerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SpawnTicker>()
             .init_resource::<SpawnManager>()
+            .add_observer(on_game_over)
             .add_systems(
                 Update,
                 (
-                    setup_manager,
                     accumulate_bank_value,
                     increase_bank_budget_over_time,
                     spawn_enemy,

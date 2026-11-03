@@ -27,6 +27,6 @@ pub fn entities_health_system(
 
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, entities_health_system.in_set(InGameSystems));
+        app.add_systems(PreUpdate, entities_health_system.in_set(InGameSystems));
     }
 }

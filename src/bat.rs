@@ -7,7 +7,8 @@ use bevy::app::{App, Plugin};
 use bevy::image::TextureAtlas;
 use bevy::log::info;
 use bevy::prelude::{
-    Bundle, Commands, Entity, Event, On, Query, Res, Sprite, Timer, TimerMode, Transform, With,
+    Bundle, Commands, Entity, Event, On, Query, Res, Sprite, Timer, TimerMode, Transform, Vec3,
+    With,
 };
 use bevy_ecs_ldtk::LevelIid;
 use bevy_rapier2d::dynamics::{LockedAxes, RigidBody, Sleeping, Velocity};
@@ -46,7 +47,7 @@ pub fn bat(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
         Velocity::default(),
         position,
         RigidBody::Dynamic,
-        Collider::ball(3.),
+        Collider::ball(5.),
         LockedAxes::ROTATION_LOCKED,
         ColliderMassProperties::Density(0.1),
         Sleeping::disabled(),
@@ -68,9 +69,10 @@ pub fn on_spawn_bat(
 
     info!("Spawning bat at {:?}", spawner_position);
 
-    commands
-        .entity(level_id)
-        .with_child(bat(&monster_assets, spawner_position));
+    commands.entity(level_id).with_child(bat(
+        &monster_assets,
+        spawner_position.with_scale(Vec3::splat(0.75)),
+    ));
 }
 
 impl Plugin for BatPlugin {

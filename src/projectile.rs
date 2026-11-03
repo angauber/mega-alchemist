@@ -185,6 +185,7 @@ fn handle_projectile_hit(
         commands.trigger(ApplyDamage {
             entity: enemy,
             damage: projectile_damage.damage,
+            text_color: None,
         });
 
         commands.entity(projectile).despawn();

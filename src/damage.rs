@@ -10,6 +10,7 @@ pub struct DamagePlugin;
 pub struct ApplyDamage {
     pub entity: Entity,
     pub damage: f32,
+    pub text_color: Option<Color>,
 }
 
 fn apply_damage(
@@ -35,9 +36,9 @@ fn apply_damage(
     damage_text_position.translation.y += 20.0;
 
     render_ui_text_event.write(RenderUiText {
-        text: format!("-{} HP", actual_damage).into(),
+        text: format!("-{}", actual_damage).into(),
         font_size: 8.,
-        color: Color::linear_rgb(1.0, 0.0, 0.0),
+        color: event.text_color.unwrap_or(Color::WHITE),
         duration: Duration::from_millis(250),
         transform: Some(damage_text_position),
     });
