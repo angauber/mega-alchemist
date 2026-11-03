@@ -5,7 +5,6 @@ use crate::game::InGameSystems;
 use crate::player::Player;
 use crate::sprite_assets::ItemAssets;
 use crate::weapon::{Weapon, WeaponProjectileSize, WeaponProjectileSpeed};
-use bevy::ecs::error::info;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;

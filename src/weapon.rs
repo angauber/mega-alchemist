@@ -88,9 +88,10 @@ fn throw_projectiles(
     enemies_query: Query<(Entity, &Transform), With<Enemy>>,
     time: Res<Time>,
 ) {
-    let Ok(player_position) = player_position.single() else {
+    let Ok(player_transform) = player_position.single() else {
         return;
     };
+    let player_position = player_transform.translation.xy();
 
     for (weapon, weapon_range, weapon_damage) in weapon_query {
         let Ok(mut weapon_cooldown) = weapon_cooldown_query.get_mut(weapon) else {
@@ -109,14 +110,19 @@ fn throw_projectiles(
 
         let mut projectile_count = weapon_projectile_count_query.get_mut(weapon).unwrap();
 
-        let in_range_enemies = enemies_query
+        let mut in_range_enemies = enemies_query
             .iter()
             .filter(|(_enemy_entity, enemy_transform)| {
-                player_position
-                    .translation
-                    .distance(enemy_transform.translation)
-                    < weapon_range.range
-            });
+                player_position.distance(enemy_transform.translation.xy()) < weapon_range.range
+            })
+            .collect::<Vec<_>>();
+
+        in_range_enemies.sort_by(|a, b| {
+            let player_a = player_position.distance(a.1.translation.xy());
+            let player_b = player_position.distance(b.1.translation.xy());
+
+            player_a.total_cmp(&player_b)
+        });
 
         'enemy: for (enemy, enemy_transform) in in_range_enemies {
             commands.trigger(ThrowProjectile {
@@ -147,7 +153,7 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
 
     commands.entity(player_entity).with_child(throwable_weapon(
         200.0,
-        Duration::from_millis(750),
+        Duration::from_millis(1000),
         10.0,
         1,
         5.0,

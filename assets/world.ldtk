@@ -253,7 +253,7 @@
 			"fieldDefs": []
 		},
 		{
-			"identifier": "Skeleton_Spawner",
+			"identifier": "Spawner",
 			"uid": 21,
 			"tags": [],
 			"exportToToc": false,
@@ -409,14 +409,14 @@
 			"worldDepth": 0,
 			"pxWid": 768,
 			"pxHei": 768,
-			"__bgColor": "#696A79",
-			"bgColor": null,
+			"__bgColor": "#0010FF",
+			"bgColor": "#0010FF",
 			"useAutoIdentifier": true,
 			"bgRelPath": null,
 			"bgPos": null,
 			"bgPivotX": 0.5,
 			"bgPivotY": 0.5,
-			"__smartColor": "#ADADB5",
+			"__smartColor": "#737CFF",
 			"__bgPos": null,
 			"externalRelPath": null,
 			"fieldInstances": [],
@@ -1335,7 +1335,7 @@
 							"__worldY": 240
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [2,2],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -1351,7 +1351,7 @@
 							"__worldY": 80
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [21,2],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -1991,7 +1991,7 @@
 							"__worldY": 512
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [2,21],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2007,7 +2007,7 @@
 							"__worldY": 688
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [21,21],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2023,7 +2023,7 @@
 							"__worldY": 688
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [9,21],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2039,7 +2039,7 @@
 							"__worldY": 688
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [16,21],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2055,7 +2055,7 @@
 							"__worldY": 688
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [21,7],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2071,7 +2071,7 @@
 							"__worldY": 240
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [7,2],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2087,7 +2087,7 @@
 							"__worldY": 80
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [21,14],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2103,7 +2103,7 @@
 							"__worldY": 464
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [2,14],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2119,7 +2119,7 @@
 							"__worldY": 464
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [2,7],
 							"__pivot": [0.5,0.5],
 							"__tags": [],
@@ -2135,7 +2135,7 @@
 							"__worldY": 240
 						},
 						{
-							"__identifier": "Skeleton_Spawner",
+							"__identifier": "Spawner",
 							"__grid": [15,2],
 							"__pivot": [0.5,0.5],
 							"__tags": [],

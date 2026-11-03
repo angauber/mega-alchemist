@@ -7,7 +7,7 @@ use crate::camera::CameraPlugin;
 use crate::health::HealthPlugin;
 use crate::physics::PhysicsPlugin;
 use crate::player::PlayerPlugin;
-use crate::skeleton::SkeletonPlugin;
+use crate::spawner::SpawnerPlugin;
 use crate::ui::UiPlugin;
 use crate::wall::WallPlugin;
 
@@ -22,6 +22,7 @@ mod agent;
 mod animation;
 mod asset_tracking;
 mod attack;
+mod bat;
 mod camera;
 mod damage;
 mod game;
@@ -31,6 +32,7 @@ mod player;
 mod projectile;
 mod skeleton;
 mod spawn_manager;
+mod spawner;
 mod sprite_assets;
 mod ui;
 mod wall;
@@ -58,7 +60,7 @@ fn main() {
         .add_plugins(PlayerPlugin)
         .add_plugins(SpawnManagerPlugin)
         .add_plugins(AgentPlugin)
-        .add_plugins(SkeletonPlugin)
+        .add_plugins(SpawnerPlugin)
         .add_plugins(DamagePlugin)
         .add_plugins(AttackPlugin)
         .add_plugins(HealthPlugin)

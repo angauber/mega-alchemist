@@ -1,29 +1,25 @@
 use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
-use crate::asset_tracking::LoadResource;
 use crate::attack::ContactAttack;
 use crate::health::Health;
-use crate::player::Player;
 use crate::sprite_assets::MonsterAssets;
-use bevy::prelude::*;
-use bevy_ecs_ldtk::prelude::*;
-use bevy_rapier2d::prelude::*;
-
-pub struct SkeletonPlugin;
+use bevy::app::App;
+use bevy::image::TextureAtlas;
+use bevy::log::info;
+use bevy::prelude::{
+    Bundle, Commands, Entity, Event, On, Plugin, Query, Res, Sprite, Timer, TimerMode, Transform,
+    With,
+};
+use bevy_ecs_ldtk::LevelIid;
+use bevy_rapier2d::dynamics::{LockedAxes, RigidBody, Sleeping, Velocity};
+use bevy_rapier2d::geometry::{Collider, ColliderMassProperties};
 
 const SKELETON_SPRITE_INDEX: usize = 48;
 
+pub struct SkeletonPlugin;
+
 #[derive(Event)]
-pub struct SpawnSkeleton;
-
-#[derive(Component, Default, Debug)]
-pub struct SkeletonSpawner;
-
-#[derive(Default, Bundle, Debug, LdtkEntity)]
-pub struct SkeletonSpawnerBundle {
-    transform: Transform,
-    spawner: SkeletonSpawner,
-}
+pub struct SpawnSkeleton(pub Transform);
 
 pub fn skeleton_sprite(monster_assets: &MonsterAssets) -> Sprite {
     Sprite::from_atlas_image(
@@ -38,14 +34,14 @@ pub fn skeleton_sprite(monster_assets: &MonsterAssets) -> Sprite {
 pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
     (
         Enemy,
-        Health { point: 10. },
+        Health { point: 25. },
         ContactAttack {
-            damage: 10.,
+            damage: 25.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),
         },
         AgentSteering {
-            max_speed: 100.,
-            max_accel: 500.,
+            max_speed: 40.,
+            max_accel: 300.,
         },
         FlippableSprite,
         Velocity::default(),
@@ -60,10 +56,8 @@ pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bun
 }
 
 pub fn on_spawn_skeleton(
-    _event: On<SpawnSkeleton>,
+    event: On<SpawnSkeleton>,
     mut commands: Commands,
-    spawners_query: Query<&Transform, With<SkeletonSpawner>>,
-    player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
     monster_assets: Res<MonsterAssets>,
 ) {
@@ -71,43 +65,17 @@ pub fn on_spawn_skeleton(
         return;
     };
 
-    let Ok(player_transform) = player_position_query.single() else {
-        return;
-    };
+    let spawner_position = event.0;
 
-    let player_position = player_transform.translation.xy();
-
-    let Some(furthest_spawner) = spawners_query
-        .iter()
-        .sort_by::<&Transform>(|spawner_a, spawner_b| {
-            player_position
-                .distance(spawner_a.translation.xy())
-                .total_cmp(&player_position.distance(spawner_b.translation.xy()))
-        })
-        .next_back()
-    else {
-        warn!("no SkeletonSpawner found");
-        return;
-    };
-
-    let mut skeleton_position = *furthest_spawner;
-
-    skeleton_position.translation.z = 5.0;
-
-    info!(
-        "Spawning skeleton at {:?}",
-        skeleton_position.translation.xyz()
-    );
+    info!("Spawning skeleton at {:?}", spawner_position);
 
     commands
         .entity(level_id)
-        .with_child(skeleton(&monster_assets, skeleton_position));
+        .with_child(skeleton(&monster_assets, spawner_position));
 }
 
 impl Plugin for SkeletonPlugin {
     fn build(&self, app: &mut App) {
-        app.register_ldtk_entity::<SkeletonSpawnerBundle>("Skeleton_Spawner")
-            .load_resource::<MonsterAssets>()
-            .add_observer(on_spawn_skeleton);
+        app.add_observer(on_spawn_skeleton);
     }
 }

@@ -1,11 +1,8 @@
 use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
-use crate::health::Health;
 use crate::player::Player;
-use crate::ui::RenderUiText;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use std::time::Duration;
 
 pub struct AttackPlugin;
 
