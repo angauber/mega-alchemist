@@ -35,7 +35,7 @@ pub fn skeleton_sprite(monster_assets: &MonsterAssets) -> Sprite {
 pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
     (
         Enemy,
-        Health { point: 40. },
+        Health::new(50.),
         ContactAttack {
             damage: 25.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),

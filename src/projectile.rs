@@ -5,7 +5,6 @@ use crate::game::InGameSystems;
 use crate::physics::started_collision_pairs;
 use crate::player::Player;
 use crate::sprite_assets::ItemAssets;
-use crate::weapon::{Weapon, WeaponProjectileSize, WeaponProjectileSpeed};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -76,13 +75,14 @@ pub struct ThrowProjectile {
     pub target: Entity,
     pub target_transform: Transform,
     pub range: f32,
+    pub speed: f32,
+    pub size: f32,
     pub damage: f32,
 }
 
 fn on_throw_projectile(
     event: On<ThrowProjectile>,
     mut commands: Commands,
-    projectile_query: Query<(&WeaponProjectileSize, &WeaponProjectileSpeed), With<Weapon>>,
     player_position_query: Query<&Transform, With<Player>>,
     level_query: Query<Entity, With<LevelIid>>,
     items_assets: Res<ItemAssets>,
@@ -100,19 +100,16 @@ fn on_throw_projectile(
         return;
     };
 
-    let Ok((projectile_size, projectile_speed)) = projectile_query.single() else {
-        warn!("projectile is missing either size or speed component");
-        return;
-    };
-
-    let projectile_range = event.range;
-    let projectile_damage = event.damage;
     let target_transform = event.target_transform;
+    let projectile_range = event.range;
+    let projectile_speed = event.speed;
+    let projectile_size = event.size;
+    let projectile_damage = event.damage;
 
     let projectile_direction =
         target_transform.translation.xy() - player_transform.translation.xy();
     let projectile_velocity =
-        Velocity::linear(projectile_direction.normalize_or_zero() * projectile_speed.speed);
+        Velocity::linear(projectile_direction.normalize_or_zero() * projectile_speed);
 
     let mut projectile_transform = *player_transform;
 
@@ -122,7 +119,7 @@ fn on_throw_projectile(
 
     projectile_transform.rotate_z(projectile_angle.angle_to(projectile_direction));
 
-    let projectile_collider = Collider::ball(projectile_size.size / 2.);
+    let projectile_collider = Collider::ball(projectile_size);
 
     commands.entity(level_id).with_child((
         projectile(
@@ -169,13 +166,12 @@ fn handle_projectile_hit(
             continue;
         };
 
-        info!(
-            "applying {} damage to enemy {}",
-            projectile_damage.damage, enemy
-        );
+        let damage = projectile_damage.damage;
+        info!("applying {} damage to enemy {}", damage, enemy);
+
         commands.trigger(ApplyDamage {
             entity: enemy,
-            damage: projectile_damage.damage,
+            damage,
             text_color: None,
         });
 

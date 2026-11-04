@@ -1,5 +1,5 @@
 use crate::health::Health;
-use crate::ui::RenderUiText;
+use crate::ui::text::RenderUiText;
 use bevy::prelude::*;
 use bevy_rapier2d::na::clamp;
 use std::time::Duration;
@@ -27,16 +27,16 @@ fn apply_damage(
         return;
     };
 
-    let actual_damage = clamp(event.damage, 1.0, entity_health.point);
+    let actual_damage = clamp(event.damage, 1.0, entity_health.points);
 
-    entity_health.point -= actual_damage;
+    entity_health.points -= actual_damage;
 
     let mut damage_text_position = *entity_position;
 
     damage_text_position.translation.y += 20.0;
 
     render_ui_text_event.write(RenderUiText {
-        text: format!("-{}", actual_damage).into(),
+        text: format!("-{:.0}", actual_damage).into(),
         font_size: 8.,
         color: event.text_color.unwrap_or(Color::WHITE),
         duration: Duration::from_millis(250),

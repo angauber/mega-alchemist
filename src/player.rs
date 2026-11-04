@@ -1,4 +1,5 @@
 use crate::animation::FlippableSprite;
+use crate::build::PlayerBuild;
 use crate::game::InGameSystems;
 use crate::health::Health;
 use bevy::prelude::*;
@@ -7,9 +8,9 @@ use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
-const MAX_SPEED: f32 = 100.0;
-const ACCELERATION: f32 = 550.0;
-const DECELERATION: f32 = 1200.0;
+const SPEED: f32 = 100.0;
+const ACCELERATION: f32 = 500.0;
+const DECELERATION: f32 = 1000.0;
 
 #[derive(Component, Default)]
 pub struct Player;
@@ -37,7 +38,7 @@ pub struct PlayerBundle {
 }
 
 fn player_health(_: &EntityInstance) -> Health {
-    Health { point: 100. }
+    Health::new(PlayerBuild::default().max_health)
 }
 
 fn player_collider(_: &EntityInstance) -> Collider {
@@ -64,6 +65,7 @@ fn player_movement(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut velocity_query: Query<&mut Velocity, With<Player>>,
+    player_build: Res<PlayerBuild>,
 ) {
     let Ok(mut player_velocity) = velocity_query.single_mut() else {
         return;
@@ -88,11 +90,11 @@ fn player_movement(
 
     let dir = dir.normalize_or_zero();
 
-    let target = dir * MAX_SPEED;
+    let target = dir * SPEED * player_build.move_speed;
     let rate = if dir == Vec2::ZERO {
-        DECELERATION
+        DECELERATION * player_build.move_speed
     } else {
-        ACCELERATION
+        ACCELERATION * player_build.move_speed
     };
 
     player_velocity.linear = player_velocity.linear.move_towards(target, rate * dt);

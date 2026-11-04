@@ -6,7 +6,17 @@ pub struct HealthPlugin;
 
 #[derive(Component, Default, Debug)]
 pub struct Health {
-    pub point: f32,
+    pub max: f32,
+    pub points: f32,
+}
+
+impl Health {
+    pub fn new(points: f32) -> Self {
+        Health {
+            max: points,
+            points,
+        }
+    }
 }
 
 pub fn entities_health_system(
@@ -15,7 +25,7 @@ pub fn entities_health_system(
     player_query: Query<Entity, With<Player>>,
 ) {
     for (entity, health) in &health_query {
-        if health.point <= 0. {
+        if health.points <= 0. {
             if player_query.contains(entity) {
                 commands.trigger(GameOver);
             }

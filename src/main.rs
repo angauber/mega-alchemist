@@ -3,6 +3,7 @@ extern crate core;
 use crate::agent::AgentPlugin;
 use crate::animation::AnimationPlugin;
 use crate::attack::AttackPlugin;
+use crate::build::BuildPlugin;
 use crate::camera::CameraPlugin;
 use crate::damage::DamagePlugin;
 use crate::game::GamePlugin;
@@ -22,6 +23,7 @@ mod animation;
 mod asset_tracking;
 mod attack;
 mod bat;
+mod build;
 mod camera;
 mod damage;
 mod game;
@@ -52,10 +54,12 @@ fn main() {
         )
         .add_plugins(asset_tracking::plugin)
         .add_plugins(GamePlugin)
+        .add_plugins(UiPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(PhysicsPlugin)
         .add_plugins(LdtkPlugin)
         .add_plugins(WallPlugin)
+        .add_plugins(BuildPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(SpawnManagerPlugin)
         .add_plugins(AgentPlugin)
@@ -65,7 +69,6 @@ fn main() {
         .add_plugins(HealthPlugin)
         .add_plugins(WeaponPlugin)
         .add_plugins(AnimationPlugin)
-        .add_plugins(UiPlugin)
         .add_systems(Startup, scene.spawn())
         .insert_resource(LevelSelection::index(0))
         .run();

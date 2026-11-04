@@ -1,6 +1,7 @@
-use crate::game::{EnemyCounter, GameMainTextUiNode, InGameSystems};
+use crate::game::{EnemyCounter, InGameSystems};
 use crate::spawn_manager::SpawnManager;
-use crate::ui::UiTextBundle;
+use crate::ui::game::GameMainTextUiNode;
+use crate::ui::text::UiTextBundle;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 
