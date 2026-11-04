@@ -8,6 +8,7 @@ use crate::camera::CameraPlugin;
 use crate::damage::DamagePlugin;
 use crate::game::GamePlugin;
 use crate::health::HealthPlugin;
+use crate::level::LevelPlugin;
 use crate::physics::PhysicsPlugin;
 use crate::player::PlayerPlugin;
 use crate::spawn_manager::SpawnManagerPlugin;
@@ -15,6 +16,7 @@ use crate::spawner::SpawnerPlugin;
 use crate::ui::UiPlugin;
 use crate::wall::WallPlugin;
 use crate::weapon::WeaponPlugin;
+
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 
@@ -28,6 +30,7 @@ mod camera;
 mod damage;
 mod game;
 mod health;
+mod level;
 mod physics;
 mod player;
 mod projectile;
@@ -35,6 +38,7 @@ mod skeleton;
 mod spawn_manager;
 mod spawner;
 mod sprite_assets;
+mod transmutation;
 mod ui;
 mod wall;
 mod weapon;
@@ -53,11 +57,12 @@ fn main() {
                 }),
         )
         .add_plugins(asset_tracking::plugin)
-        .add_plugins(GamePlugin)
-        .add_plugins(UiPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(PhysicsPlugin)
         .add_plugins(LdtkPlugin)
+        .add_plugins(GamePlugin)
+        .add_plugins(UiPlugin)
+        .add_plugins(LevelPlugin)
         .add_plugins(WallPlugin)
         .add_plugins(BuildPlugin)
         .add_plugins(PlayerPlugin)

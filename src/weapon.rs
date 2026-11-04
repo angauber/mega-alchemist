@@ -11,6 +11,11 @@ fn global_multiplier(a: f32, b: f32) -> f32 {
     1. + (a - 1.) + (b - 1.)
 }
 
+#[derive(Debug)]
+pub enum WeaponType {
+    Knife,
+}
+
 #[derive(Component)]
 pub struct Weapon;
 

@@ -9,6 +9,17 @@ use bevy::prelude::*;
 
 pub struct GameUiPlugin;
 
+pub const BROWN: Color = Color::srgb_u8(26, 19, 15);
+pub const DARK_GRAY: Color = Color::srgb_u8(50, 60, 57);
+#[allow(dead_code)]
+pub const BLUE: Color = Color::srgb_u8(16, 22, 46);
+#[allow(dead_code)]
+pub const PURPLE: Color = Color::srgb_u8(28, 20, 41);
+#[allow(dead_code)]
+pub const LIGHT_BLUE: Color = Color::srgb_u8(116, 143, 147);
+#[allow(dead_code)]
+pub const LIGHT_GRAY: Color = Color::srgb_u8(105, 106, 106);
+
 #[derive(Component, Default)]
 pub struct GameMainTextUiNode;
 
