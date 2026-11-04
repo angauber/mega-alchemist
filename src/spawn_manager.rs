@@ -25,7 +25,7 @@ impl Enemy {
     pub fn cost(&self) -> f32 {
         match self {
             Bat => 10.0,
-            Skeleton => 25.0,
+            Skeleton => 30.0,
         }
     }
 }
@@ -67,7 +67,7 @@ impl Default for SpawnManager {
             weights: SpawnWeights::default(),
             memory: None,
             bank_value: 0.0,
-            bank_budget: 10.0,
+            bank_budget: 5.0,
         }
     }
 }

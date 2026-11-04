@@ -34,7 +34,7 @@ pub fn bat_sprite(monster_assets: &MonsterAssets) -> Sprite {
 pub fn bat(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
     (
         Enemy,
-        Health::new(20.),
+        Health::new(15.),
         ContactAttack {
             damage: 10.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),

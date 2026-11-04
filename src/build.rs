@@ -22,7 +22,7 @@ impl Default for PlayerBuild {
             damage: 1.0,
             range: 1.0,
             attack_speed: 1.0,
-            projectile_count: 1,
+            projectile_count: 0,
             projectile_size: 1.0,
             projectile_speed: 1.0,
         }

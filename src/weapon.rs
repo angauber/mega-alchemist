@@ -70,18 +70,6 @@ pub struct WeaponProjectileCount {
     pub used: usize,
 }
 
-#[derive(Event)]
-pub struct IncreaseWeaponAttackSpeed {
-    pub weapon: Entity,
-    pub percentage: f32,
-}
-
-#[derive(Event)]
-pub struct IncreaseWeaponDamage {
-    pub weapon: Entity,
-    pub percentage: f32,
-}
-
 pub fn throwable_weapon(
     weapon_range: f32,
     weapon_cooldown: Duration,
@@ -225,33 +213,9 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
     commands.entity(player_entity).with_child(knife());
 }
 
-fn increase_weapon_attack_speed(
-    event: On<IncreaseWeaponAttackSpeed>,
-    mut weapon_attack_speed_query: Query<&mut WeaponAttackSpeed>,
-) {
-    let Ok(mut attack_speed) = weapon_attack_speed_query.get_mut(event.weapon) else {
-        return;
-    };
-
-    attack_speed.multiplier += event.percentage;
-}
-
-fn increase_weapon_damage(
-    event: On<IncreaseWeaponDamage>,
-    mut weapon_damage_query: Query<&mut WeaponDamage>,
-) {
-    let Ok(mut weapon_damage) = weapon_damage_query.get_mut(event.weapon) else {
-        return;
-    };
-
-    weapon_damage.multiplier += event.percentage;
-}
-
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ProjectilePlugin)
-            .add_observer(increase_weapon_attack_speed)
-            .add_observer(increase_weapon_damage)
             .add_systems(PreUpdate, weapon_cooldown_system.in_set(InGameSystems))
             .add_systems(
                 Update,
