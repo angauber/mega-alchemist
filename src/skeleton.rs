@@ -41,7 +41,7 @@ pub fn skeleton(monster_assets: &MonsterAssets, position: Transform) -> impl Bun
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),
         },
         AgentSteering {
-            max_speed: 30.,
+            max_speed: 25.,
             max_accel: 300.,
         },
         FlippableSprite,

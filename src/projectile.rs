@@ -28,13 +28,21 @@ pub struct ProjectileRange {
     pub range: f32,
 }
 
-pub fn knife_sprite(item_assets: &ItemAssets) -> Sprite {
-    Sprite::from_atlas_image(
-        item_assets.sprite.clone(),
-        TextureAtlas {
-            layout: item_assets.texture_atlas_layout.clone(),
-            index: KNIFE_SPRITE_INDEX,
-        },
+#[derive(Component)]
+pub struct TargetTracking {
+    target: Entity,
+}
+
+fn knife(item_assets: &ItemAssets, target: Entity) -> impl Bundle {
+    (
+        Sprite::from_atlas_image(
+            item_assets.sprite.clone(),
+            TextureAtlas {
+                layout: item_assets.texture_atlas_layout.clone(),
+                index: KNIFE_SPRITE_INDEX,
+            },
+        ),
+        TargetTracking { target },
     )
 }
 
@@ -58,20 +66,6 @@ pub fn projectile(
             range,
         },
         ProjectileDamage { damage },
-    )
-}
-
-pub fn knife_projectile(
-    transform: Transform,
-    velocity: Velocity,
-    collider: Collider,
-    range: f32,
-    damage: f32,
-    item_assets: &ItemAssets,
-) -> impl Bundle {
-    (
-        projectile(transform, velocity, collider, range, damage),
-        knife_sprite(item_assets),
     )
 }
 
@@ -129,13 +123,15 @@ fn on_throw_projectile(
 
     let projectile_collider = Collider::ball(projectile_size.size / 2.);
 
-    commands.entity(level_id).with_child(knife_projectile(
-        projectile_transform,
-        projectile_velocity,
-        projectile_collider,
-        projectile_range,
-        projectile_damage,
-        &items_assets,
+    commands.entity(level_id).with_child((
+        projectile(
+            projectile_transform,
+            projectile_velocity,
+            projectile_collider,
+            projectile_range,
+            projectile_damage,
+        ),
+        knife(&items_assets, event.target),
     ));
 }
 
@@ -169,7 +165,7 @@ fn handle_projectile_hit(
         _ => None,
     });
 
-    for (projectile, enemy) in started_events.map(|(a, b)| [(a, b), (b, a)]).flatten() {
+    for (projectile, enemy) in started_events.flat_map(|(a, b)| [(a, b), (b, a)]) {
         if !enemy_query.contains(enemy) {
             continue;
         }
@@ -192,13 +188,37 @@ fn handle_projectile_hit(
     }
 }
 
+fn update_projectile_target_tracking(
+    mut projectile_query: Query<(&mut Velocity, &mut Transform, &TargetTracking), With<Projectile>>,
+    target_query: Query<&Transform, (With<Enemy>, Without<Projectile>)>,
+) {
+    for (mut velocity, mut transform, tracking) in projectile_query.iter_mut() {
+        let Ok(target_transform) = target_query.get(tracking.target) else {
+            continue;
+        };
+
+        let projectile_target = target_transform.translation.xy() - transform.translation.xy();
+
+        let drift = projectile_target.angle_to(velocity.linear);
+
+        *velocity =
+            Velocity::linear(projectile_target.normalize_or_zero() * velocity.linear.length());
+        transform.rotate_z(-drift);
+    }
+}
+
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
         app.load_resource::<ItemAssets>()
             .add_observer(on_throw_projectile)
             .add_systems(
                 Update,
-                (handle_projectile_hit, despawn_projectile_on_range_exceeded).in_set(InGameSystems),
+                (
+                    handle_projectile_hit,
+                    despawn_projectile_on_range_exceeded,
+                    update_projectile_target_tracking,
+                )
+                    .in_set(InGameSystems),
             );
     }
 }

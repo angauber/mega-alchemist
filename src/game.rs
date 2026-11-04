@@ -1,3 +1,4 @@
+use crate::agent::Enemy;
 use crate::health::Health;
 use crate::player::Player;
 use crate::ui::{RenderUiText, UiTextBundle};
@@ -40,6 +41,11 @@ pub struct PlayerHealthUI;
 
 #[derive(Component, Default)]
 pub struct GameClockUI;
+
+#[derive(Resource, Default)]
+pub struct EnemyCounter {
+    pub count: usize,
+}
 
 impl GameOverTimer {
     fn new(duration: Duration) -> Self {
@@ -126,15 +132,10 @@ fn on_game_over(
     _event: On<GameOver>,
     mut commands: Commands,
     mut ui_text_messages: MessageWriter<RenderUiText>,
-    main_text_ui_query: Query<Entity, With<GameMainTextUiNode>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     next_state.set(GameState::Paused);
     commands.spawn(GameOverTimer::new(Duration::from_secs(4)));
-
-    if let Ok(game_ui) = main_text_ui_query.single() {
-        commands.entity(game_ui).despawn();
-    }
 
     ui_text_messages.write(RenderUiText {
         text: Text2d::new("GAME OVER"),
@@ -148,10 +149,15 @@ fn on_game_over_with_delay(
     mut commands: Commands,
     mut level_selection: ResMut<LevelSelection>,
     ldtk_projects: Query<Entity, With<LdtkProjectHandle>>,
+    main_text_ui_query: Query<Entity, With<GameMainTextUiNode>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut game_clock: ResMut<GameClock>,
 ) {
     info!("respawning level !");
+    if let Ok(game_ui) = main_text_ui_query.single() {
+        commands.entity(game_ui).despawn();
+    }
+
     game_clock.0.reset();
 
     *level_selection = LevelSelection::index(0);
@@ -191,7 +197,7 @@ fn tick_game_clock(
         return;
     };
 
-    game_clock_text.0 = format!("TIME {:.2}", game_clock.0.elapsed_secs());
+    game_clock_text.0 = format!("Time {:.2}", game_clock.0.elapsed_secs());
 }
 
 fn update_game_clock_text() {}
@@ -209,22 +215,30 @@ fn toggle_game_state_on_space(
     }
 }
 
+fn count_enemies(mut enemy_counter: ResMut<EnemyCounter>, enemy_query: Query<Entity, With<Enemy>>) {
+    enemy_counter.count = enemy_query.iter().count();
+}
+
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
             .configure_sets(Update, InGameSystems.run_if(in_state(GameState::InGame)))
             .configure_sets(PreUpdate, InGameSystems.run_if(in_state(GameState::InGame)))
             .init_resource::<GameClock>()
+            .init_resource::<EnemyCounter>()
             .add_observer(on_game_over)
             .add_observer(on_game_over_with_delay)
             .add_systems(PreUpdate, trigger_game_over_with_delay)
             .add_systems(PreUpdate, tick_game_clock.in_set(InGameSystems))
-            .add_systems(Update, toggle_game_state_on_space)
+            .add_systems(
+                Update,
+                (toggle_game_state_on_space, update_player_health_text),
+            )
             .add_systems(
                 Update,
                 (
+                    count_enemies,
                     spawn_game_main_text_ui_node,
-                    update_player_health_text,
                     update_game_clock_text,
                 )
                     .in_set(InGameSystems),

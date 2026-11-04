@@ -16,8 +16,6 @@ use crate::wall::WallPlugin;
 use crate::weapon::WeaponPlugin;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
-#[cfg(feature = "dev_tools")]
-use crate::debug::DebugPlugin;
 
 mod agent;
 mod animation;
@@ -38,13 +36,9 @@ mod sprite_assets;
 mod ui;
 mod wall;
 mod weapon;
-#[cfg(feature = "dev_tools")]
-mod debug;
 
 fn main() {
-    let mut app = App::new();
-    
-    app
+    App::new()
         .add_plugins(
             DefaultPlugins
                 .set(ImagePlugin::default_nearest())
@@ -73,15 +67,8 @@ fn main() {
         .add_plugins(AnimationPlugin)
         .add_plugins(UiPlugin)
         .add_systems(Startup, scene.spawn())
-        .insert_resource(LevelSelection::index(0));
-
-    
-        #[cfg(feature = "dev_tools")]
-        {
-            app.add_plugins(DebugPlugin);
-        }
-        
-        app.run();
+        .insert_resource(LevelSelection::index(0))
+        .run();
 }
 
 fn scene() -> impl Scene {

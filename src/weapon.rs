@@ -79,6 +79,10 @@ pub fn throwable_weapon(
     )
 }
 
+fn knife() -> impl Bundle {
+    throwable_weapon(200.0, Duration::from_millis(1000), 10.0, 1, 5.0, 150.0)
+}
+
 fn throw_projectiles(
     mut commands: Commands,
     player_position: Query<&Transform, With<Player>>,
@@ -151,14 +155,7 @@ fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added
         return;
     };
 
-    commands.entity(player_entity).with_child(throwable_weapon(
-        200.0,
-        Duration::from_millis(1000),
-        10.0,
-        1,
-        5.0,
-        200.0,
-    ));
+    commands.entity(player_entity).with_child(knife());
 }
 
 impl Plugin for WeaponPlugin {

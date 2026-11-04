@@ -7,9 +7,9 @@ use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
-const MAX_SPEED: f32 = 150.0;
-const ACCELERATION: f32 = 750.0;
-const DECELERATION: f32 = 1500.0;
+const MAX_SPEED: f32 = 100.0;
+const ACCELERATION: f32 = 550.0;
+const DECELERATION: f32 = 1200.0;
 
 #[derive(Component, Default)]
 pub struct Player;

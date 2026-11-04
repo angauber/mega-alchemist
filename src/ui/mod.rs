@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 use std::time::Duration;
 
+#[cfg(feature = "dev_tools")]
+use crate::ui::debug::DebugPlugin;
+#[cfg(feature = "dev_tools")]
+pub mod debug;
+
 pub struct UiPlugin;
 
 #[derive(Message)]
@@ -115,5 +120,10 @@ impl Plugin for UiPlugin {
         app.add_message::<RenderUiText>()
             .add_systems(Update, render_ui_text)
             .add_systems(Update, clear_ui_entities);
+
+        #[cfg(feature = "dev_tools")]
+        {
+            app.add_plugins(DebugPlugin);
+        }
     }
 }
