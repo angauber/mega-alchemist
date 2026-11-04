@@ -31,7 +31,7 @@ fn apply_damage(
 
     entity_health.point -= actual_damage;
 
-    let mut damage_text_position = entity_position.clone();
+    let mut damage_text_position = *entity_position;
 
     damage_text_position.translation.y += 20.0;
 

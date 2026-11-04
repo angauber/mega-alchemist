@@ -40,7 +40,7 @@ pub fn bat(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),
         },
         AgentSteering {
-            max_speed: 50.,
+            max_speed: 40.,
             max_accel: 500.,
         },
         FlippableSprite,

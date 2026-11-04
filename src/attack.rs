@@ -39,8 +39,6 @@ fn attack_contact_system(
                         continue;
                     };
 
-                    info!("Enemy {} contacted with player", attacker_entity);
-
                     commands.entity(*attacker_entity).insert(Attacking);
                 }
             }
@@ -54,8 +52,6 @@ fn attack_contact_system(
                     if !player_query.contains(*player_entity) {
                         continue;
                     };
-
-                    info!("Enemy {} ended contact with player", attacker_entity);
 
                     commands.entity(*attacker_entity).remove::<Attacking>();
                 }

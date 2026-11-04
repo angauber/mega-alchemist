@@ -1,16 +1,19 @@
 use crate::game::{EnemyCounter, GameMainTextUiNode, InGameSystems};
 use crate::spawn_manager::SpawnManager;
 use crate::ui::UiTextBundle;
+use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 
 pub struct DebugPlugin;
 
 #[derive(Component)]
+struct EnemyCountText;
+#[derive(Component)]
+struct FramePerSecondText;
+#[derive(Component)]
 struct BankValueText;
 #[derive(Component)]
 struct BankBudgetText;
-#[derive(Component)]
-struct EnemyCountText;
 
 fn setup_debug_ui_nodes(
     mut commands: Commands,
@@ -18,6 +21,7 @@ fn setup_debug_ui_nodes(
     enemy_counter: Res<EnemyCounter>,
     spawn_manager: Res<SpawnManager>,
     asset_server: Res<AssetServer>,
+    diagnostic: Res<DiagnosticsStore>,
 ) {
     let Ok(game_ui_entity) = game_ui_query.single() else {
         return;
@@ -27,6 +31,19 @@ fn setup_debug_ui_nodes(
 
     commands
         .entity(game_ui_entity)
+        .with_child((
+            FramePerSecondText,
+            UiTextBundle {
+                text: fps_text(diagnostic),
+                color: TextColor(Color::WHITE),
+                font: TextFont {
+                    font: font.clone(),
+                    font_size: FontSize::Px(32.),
+                    ..default()
+                },
+                layout: TextLayout::justify(Justify::Center),
+            },
+        ))
         .with_child((
             EnemyCountText,
             UiTextBundle {
@@ -68,6 +85,17 @@ fn setup_debug_ui_nodes(
         ));
 }
 
+fn update_fps_text(
+    mut fps_text_query: Query<&mut Text, With<FramePerSecondText>>,
+    diagnostic: Res<DiagnosticsStore>,
+) {
+    let Ok(mut fps) = fps_text_query.single_mut() else {
+        return;
+    };
+
+    *fps = fps_text(diagnostic).into();
+}
+
 fn update_enemy_count_text(
     mut enemy_count_query: Query<&mut Text, With<EnemyCountText>>,
     enemy_counter: Res<EnemyCounter>,
@@ -101,6 +129,18 @@ fn update_bank_budget_text(
     *bank_budget = bank_budget_text(spawn_manager.bank_budget());
 }
 
+fn fps_text(diagnostic: Res<DiagnosticsStore>) -> Text {
+    let Some(fps_diag) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) else {
+        return Text::default();
+    };
+
+    let Some(fps_avg) = fps_diag.average() else {
+        return Text::default();
+    };
+
+    format!("FPS {:.0}", fps_avg).into()
+}
+
 fn enemy_count_text(enemy_count: usize) -> Text {
     format!("Enemy Count {}", enemy_count).into()
 }
@@ -115,15 +155,17 @@ fn bank_budget_text(bank_budget: f32) -> Text {
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                setup_debug_ui_nodes,
-                update_enemy_count_text,
-                update_bank_value_text,
-                update_bank_budget_text,
-            )
-                .in_set(InGameSystems),
-        );
+        app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+            .add_systems(
+                Update,
+                (
+                    setup_debug_ui_nodes,
+                    update_fps_text,
+                    update_enemy_count_text,
+                    update_bank_value_text,
+                    update_bank_budget_text,
+                )
+                    .in_set(InGameSystems),
+            );
     }
 }

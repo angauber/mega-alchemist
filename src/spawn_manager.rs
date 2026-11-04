@@ -49,7 +49,7 @@ pub struct SpawnTicker(Timer);
 
 impl Default for SpawnTicker {
     fn default() -> Self {
-        SpawnTicker(Timer::new(Duration::from_millis(50), TimerMode::Repeating))
+        SpawnTicker(Timer::new(Duration::from_millis(10), TimerMode::Repeating))
     }
 }
 
@@ -172,7 +172,6 @@ fn spawn_enemy(
         .filter(|spawner_position| {
             spawner_position.translation.xy().distance(player_position) >= 300.
         })
-        .take(5)
         .collect::<Vec<_>>();
 
     let Some(chosen_spawner) = spawner_pool.choose(&mut rand::rng()) else {

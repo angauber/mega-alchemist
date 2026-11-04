@@ -2,6 +2,7 @@ use crate::agent::Enemy;
 use crate::asset_tracking::LoadResource;
 use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
+use crate::physics::started_collision_pairs;
 use crate::player::Player;
 use crate::sprite_assets::ItemAssets;
 use crate::weapon::{Weapon, WeaponProjectileSize, WeaponProjectileSpeed};
@@ -153,19 +154,13 @@ fn despawn_projectile_on_range_exceeded(
 
 fn handle_projectile_hit(
     mut commands: Commands,
-    mut collision_events: MessageReader<CollisionEvent>,
+    collision_events: MessageReader<CollisionEvent>,
     projectile_query: Query<&ProjectileDamage, With<Projectile>>,
     enemy_query: Query<Entity, With<Enemy>>,
 ) {
-    let started_events = collision_events.read().filter_map(|&event| match event {
-        CollisionEvent::Started(a, b, flags) => match flags {
-            CollisionEventFlags::SENSOR => Some((a, b)),
-            _ => None,
-        },
-        _ => None,
-    });
-
-    for (projectile, enemy) in started_events.flat_map(|(a, b)| [(a, b), (b, a)]) {
+    for (projectile, enemy) in
+        started_collision_pairs(collision_events, CollisionEventFlags::SENSOR)
+    {
         if !enemy_query.contains(enemy) {
             continue;
         }

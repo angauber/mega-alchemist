@@ -3,10 +3,25 @@ use bevy::app::*;
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::rapier::geometry::CollisionEventFlags;
 
 pub struct PhysicsPlugin;
 
 const PIXELS_PER_METER: f32 = 16.0;
+
+pub fn started_collision_pairs(
+    mut events: MessageReader<CollisionEvent>,
+    filter_flags: CollisionEventFlags,
+) -> Vec<(Entity, Entity)> {
+    events
+        .read()
+        .filter_map(|event| match event {
+            CollisionEvent::Started(a, b, f) if filter_flags.contains(*f) => Some((a, b)),
+            _ => None,
+        })
+        .flat_map(|(&a, &b)| [(a, b), (b, a)])
+        .collect()
+}
 
 fn rapier_config(mut rapier_config: Query<&mut RapierConfiguration>) {
     let mut config = rapier_config.single_mut().unwrap();
