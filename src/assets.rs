@@ -1,4 +1,7 @@
+use crate::asset_tracking::LoadResource;
 use bevy::prelude::*;
+
+pub struct AssetPlugin;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -19,6 +22,7 @@ pub struct MonsterAssets {
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct FontAssets {
+    #[dependency]
     pub pixuf_font: Handle<Font>,
 }
 
@@ -63,5 +67,13 @@ impl FromWorld for FontAssets {
         let pixuf_font = world.resource::<AssetServer>().load("fonts/Pixuf.ttf");
 
         Self { pixuf_font }
+    }
+}
+
+impl Plugin for AssetPlugin {
+    fn build(&self, app: &mut App) {
+        app.load_resource::<FontAssets>()
+            .load_resource::<MonsterAssets>()
+            .load_resource::<ItemAssets>();
     }
 }

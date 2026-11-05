@@ -1,14 +1,11 @@
 use crate::asset_tracking::LoadResource;
 use crate::assets::FontAssets;
+use crate::game::InGameSystems;
 use bevy::app::{App, Plugin, Update};
 use bevy::camera::Camera2d;
 use bevy::color::Color;
 use bevy::log::info;
-use bevy::prelude::{
-    Bundle, Commands, Component, Entity, FontSize, Justify, Message, MessageReader, Query, Res,
-    Text, Text2d, TextColor, TextFont, TextLayout, Time, Timer, TimerMode, Transform, With,
-    default,
-};
+use bevy::prelude::*;
 use std::time::Duration;
 
 pub struct TextUiPlugin;
@@ -122,9 +119,9 @@ fn clear_ui_entities(
 
 impl Plugin for TextUiPlugin {
     fn build(&self, app: &mut App) {
-        app.load_resource::<FontAssets>()
-            .add_message::<RenderUiText>()
-            .add_systems(Update, render_ui_text)
-            .add_systems(Update, clear_ui_entities);
+        app.add_message::<RenderUiText>().add_systems(
+            Update,
+            (clear_ui_entities, render_ui_text).in_set(InGameSystems),
+        );
     }
 }

@@ -200,16 +200,14 @@ fn update_projectile_target_tracking(
 
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.load_resource::<ItemAssets>()
-            .add_observer(on_throw_projectile)
-            .add_systems(
-                Update,
-                (
-                    handle_projectile_hit,
-                    despawn_projectile_on_range_exceeded,
-                    update_projectile_target_tracking,
-                )
-                    .in_set(InGameSystems),
-            );
+        app.add_observer(on_throw_projectile).add_systems(
+            Update,
+            (
+                handle_projectile_hit,
+                despawn_projectile_on_range_exceeded,
+                update_projectile_target_tracking,
+            )
+                .in_set(InGameSystems),
+        );
     }
 }

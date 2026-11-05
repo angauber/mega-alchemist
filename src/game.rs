@@ -14,6 +14,7 @@ pub struct GameClock(pub Stopwatch);
 #[derive(States, Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub enum GameState {
     #[default]
+    Loading,
     InGame,
     Paused,
 }
@@ -110,6 +111,7 @@ fn toggle_game_state_on_space(
         next_state.set(match current_state.get() {
             GameState::InGame => GameState::Paused,
             GameState::Paused => GameState::InGame,
+            _ => GameState::Loading,
         });
     }
 }

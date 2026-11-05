@@ -2,6 +2,7 @@ extern crate core;
 
 use crate::agent::AgentPlugin;
 use crate::animation::AnimationPlugin;
+use crate::assets::AssetPlugin;
 use crate::attack::AttackPlugin;
 use crate::build::BuildPlugin;
 use crate::camera::CameraPlugin;
@@ -9,6 +10,7 @@ use crate::damage::DamagePlugin;
 use crate::game::GamePlugin;
 use crate::health::HealthPlugin;
 use crate::level::LevelPlugin;
+use crate::loading::LoadingPlugin;
 use crate::physics::PhysicsPlugin;
 use crate::player::PlayerPlugin;
 use crate::spawn_manager::SpawnManagerPlugin;
@@ -33,6 +35,7 @@ mod damage;
 mod game;
 mod health;
 mod level;
+mod loading;
 mod physics;
 mod player;
 mod projectile;
@@ -58,6 +61,8 @@ fn main() {
                 }),
         )
         .add_plugins(asset_tracking::plugin)
+        .add_plugins(AssetPlugin)
+        .add_plugins(LoadingPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(PhysicsPlugin)
         .add_plugins(LdtkPlugin)

@@ -20,7 +20,6 @@ impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BatPlugin)
             .add_plugins(SkeletonPlugin)
-            .register_ldtk_entity::<SpawnerBundle>("Spawner")
-            .load_resource::<MonsterAssets>();
+            .register_ldtk_entity::<SpawnerBundle>("Spawner");
     }
 }

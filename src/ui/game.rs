@@ -1,6 +1,6 @@
 use crate::asset_tracking::LoadResource;
 use crate::assets::FontAssets;
-use crate::game::GameClock;
+use crate::game::{GameClock, GameState, InGameSystems};
 use crate::health::Health;
 use crate::player::Player;
 use crate::ui::text::UiTextBundle;
@@ -106,11 +106,16 @@ fn update_game_clock_text(
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
-        app.load_resource::<FontAssets>()
-            .add_systems(Startup, setup_game_ui_node)
-            .add_systems(
-                PostUpdate,
-                (update_player_health_text, update_game_clock_text),
-            );
+        app.add_systems(
+            OnTransition {
+                exited: GameState::Loading,
+                entered: GameState::InGame,
+            },
+            setup_game_ui_node.in_set(InGameSystems),
+        )
+        .add_systems(
+            PostUpdate,
+            (update_player_health_text, update_game_clock_text).in_set(InGameSystems),
+        );
     }
 }
