@@ -1,6 +1,5 @@
 use crate::game::GameState;
-use crate::transmutation::TransmutationOffer::{NewWeapon, WeaponTransmute};
-use crate::transmutation::{ApplyTransmutationOffer, TransmutationOffer};
+use crate::transmutation::ApplyTransmutationOffer;
 use crate::ui::game::{BROWN, DARK_GRAY};
 use bevy::prelude::*;
 use bevy::text::FontSourceTemplate;

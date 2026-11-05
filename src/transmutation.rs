@@ -2,11 +2,13 @@ use crate::build::PlayerBuild;
 use crate::transmutation::TransmutationEffect::{Add, Multiply};
 use crate::transmutation::TransmutationOffer::{NewWeapon, WeaponTransmute};
 use crate::ui::transmutation::{DisplayTransmutationOffers, TransmutationTextOffer};
-use crate::weapon::WeaponStatistic::*;
 use crate::weapon::{Weapon, WeaponStatistic};
 use bevy::prelude::*;
 use log::warn;
-use rand::prelude::IndexedRandom;
+use rand::distr::weighted::WeightedIndex;
+use rand::prelude::*;
+use std::cmp::min;
+use std::collections::{HashMap, HashSet};
 
 pub struct TransmutationPlugin;
 
@@ -72,40 +74,145 @@ impl TransmutationOffers {
     }
 }
 
-// each weapon will have different stats that can be upgraded
-// each weapon should have an associated list of transmutable statistics
-// TODO cut into multiple functions
-fn random_weapon_transmutation_offer(
-    player_build: &PlayerBuild,
-) -> Result<WeaponTransmutationOffer, &str> {
-    let weapons = player_build.weapons();
+#[derive(Default)]
+struct WeaponTransmutationOfferPool {
+    weapon_stats_pool: HashMap<Weapon, HashSet<WeaponStatistic>>,
+}
 
-    let random_weapon = weapons.choose(&mut rand::rng()).ok_or("No weapons found")?;
+impl WeaponTransmutationOfferPool {
+    pub fn fill_pool(&mut self, player_build: &PlayerBuild) {
+        for weapon_build in player_build.weapon_builds() {
+            self.weapon_stats_pool.insert(
+                weapon_build.weapon,
+                weapon_build.statistics().into_iter().collect(),
+            );
+        }
+    }
 
-    let weapon_statistics = player_build.weapon_build(random_weapon)?.statistics();
+    fn random_weapon(&self) -> Result<Weapon, &str> {
+        self.weapon_stats_pool
+            .keys()
+            .cloned()
+            .choose(&mut rand::rng())
+            .ok_or("No weapons left in the pool")
+    }
 
-    // TODO weighted draw for number of Transmutation t = [1 - 3]
+    fn weapon_stats(&self, weapon: &Weapon) -> usize {
+        self.weapon_stats_pool[weapon].len()
+    }
 
-    // TODO choose t random stat from this weapon using choose_iter
-    let random_statistic = weapon_statistics
-        .choose(&mut rand::rng())
-        .ok_or("No statistics found")?;
+    fn total_stats(&self) -> usize {
+        self.weapon_stats_pool.values().map(|stats| stats.len())
+            .sum()
+    }
 
-    // TODO weighted draw for random multiplier (0.02, 0.05, 0.07, 0.08, 0.1, 0.15)
-    let random_effect: TransmutationEffect = match random_statistic {
-        ProjectileCount => Add(1),
-        _ => Multiply(0.10),
-    };
+    fn random_stat_count(&self, weapon: &Weapon, offers_left: usize) -> usize {
+        let weapon_sat = self.weapon_stats(weapon);
+        let reserved_budget = self.total_stats() - offers_left;
+        let budget = min(weapon_sat, reserved_budget);
 
-    let random_transmutation = WeaponTransmutation {
-        statistic: *random_statistic,
-        effect: random_effect,
-    };
+        let stat_options: Vec<usize> = [1, 2, 3].into_iter().take(budget).collect();
+        let stat_weights: Vec<usize> = [25, 10, 1].into_iter().take(budget).collect();
 
-    Ok(WeaponTransmutationOffer {
-        weapon: *random_weapon,
-        transmutations: [None, Some(random_transmutation), None],
-    })
+        let mut rng = rand::rng();
+        let weighted_index = WeightedIndex::new(&stat_weights).unwrap();
+        let stat_count_index = weighted_index.sample(&mut rng);
+
+        stat_options[stat_count_index]
+    }
+
+    fn remove_weapon_stats(&mut self, weapon: &Weapon, stats: &Vec<WeaponStatistic>) {
+        let Some(weapon_stats) = self.weapon_stats_pool.get_mut(weapon) else {
+            warn!("Weapon not in the pool");
+            return;
+        };
+
+        for stat in stats {
+            weapon_stats.remove(stat);
+        }
+
+        if weapon_stats.is_empty() {
+            self.weapon_stats_pool.remove(weapon);
+        }
+    }
+
+    fn draw_random_weapon_stats(
+        &mut self,
+        weapon: &Weapon,
+        stat_count: usize,
+    ) -> Vec<WeaponStatistic> {
+        let available_stats: Vec<WeaponStatistic> =
+            self.weapon_stats_pool[weapon].clone().into_iter().collect();
+
+        let mut rng = rand::rng();
+
+        // TODO add statistics weights
+        let Ok(sampled_weights) = available_stats.sample_weighted(&mut rng, stat_count, |_stat| 1)
+        else {
+            warn!("could not sample weights to draw weapon stats");
+            return Vec::new();
+        };
+
+        let stats: Vec<WeaponStatistic> = sampled_weights.copied().collect();
+
+        self.remove_weapon_stats(weapon, &stats);
+
+        stats
+    }
+
+    pub fn draw_transmutation_effect(&self, stat: &WeaponStatistic) -> TransmutationEffect {
+        if stat == &WeaponStatistic::ProjectileCount {
+            let amounts = [1, 2, 3];
+            let weights = [20, 5, 1];
+
+            let mut rng = rand::rng();
+            let weighted_index = WeightedIndex::new(weights).unwrap();
+            let index = weighted_index.sample(&mut rng);
+
+            return Add(amounts[index]);
+        }
+
+        let multipliers = [0.02, 0.04, 0.06, 0.08, 0.10];
+        let weights = [1, 5, 10, 5, 1];
+
+        let mut rng = rand::rng();
+        let weighted_index = WeightedIndex::new(weights).unwrap();
+        let index = weighted_index.sample(&mut rng);
+
+        Multiply(multipliers[index])
+    }
+
+    pub fn draw_unique_offer(
+        &mut self,
+        offers_left: usize,
+    ) -> Result<WeaponTransmutationOffer, String> {
+        let mut transmutations: [Option<WeaponTransmutation>; 3] = [None, None, None];
+
+        let weapon = self.random_weapon()?;
+        let stat_count = self.random_stat_count(&weapon, offers_left);
+
+        let stats = self.draw_random_weapon_stats(&weapon, stat_count);
+
+        if stats.len() != stat_count {
+            return Err(format!(
+                "Stats count mismatch, stat_count: {} stats.len: {}",
+                stat_count,
+                stats.len()
+            ));
+        }
+
+        for n in 0..stat_count {
+            transmutations[n] = Some(WeaponTransmutation {
+                statistic: stats[n],
+                effect: self.draw_transmutation_effect(&stats[n]),
+            })
+        }
+
+        Ok(WeaponTransmutationOffer {
+            weapon,
+            transmutations,
+        })
+    }
 }
 
 fn transmutation_offer_to_text(offer: TransmutationOffer) -> TransmutationTextOffer {
@@ -125,7 +232,6 @@ fn transmutation_offer_to_text(offer: TransmutationOffer) -> TransmutationTextOf
             effects: weapon_transmutation.transmutations.map(|transmutation| {
                 transmutation
                     // TODO format transmutation text using player weapon real stats
-                    // requires to query each player weapon components...
                     .map(|transmutation| transmutation.text())
                     .unwrap_or(String::default())
             }),
@@ -138,18 +244,21 @@ fn draw_transmutation_offers(
     player_build: Res<PlayerBuild>,
     mut commands: Commands,
 ) {
-    // TODO allow reroll
-    let Ok(a) = random_weapon_transmutation_offer(&player_build) else {
+    let mut weapon_offer_pool = WeaponTransmutationOfferPool::default();
+
+    weapon_offer_pool.fill_pool(&player_build);
+
+    let Ok(a) = weapon_offer_pool.draw_unique_offer(2) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
 
-    let Ok(b) = random_weapon_transmutation_offer(&player_build) else {
+    let Ok(b) = weapon_offer_pool.draw_unique_offer(1) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
 
-    let Ok(c) = random_weapon_transmutation_offer(&player_build) else {
+    let Ok(c) = weapon_offer_pool.draw_unique_offer(0) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
@@ -174,8 +283,8 @@ fn apply_transmutation_offer(
 ) {
     let offer = offers.get(event.0);
 
-    if let NewWeapon(new_weapon) = offer {
-        // TODO trigger unlocknew_weapon_unlocked event
+    if let NewWeapon(_new_weapon) = offer {
+        // TODO trigger unlock_new_weapon event when more weapons are added
     }
 
     if let WeaponTransmute(transmutation) = offer {

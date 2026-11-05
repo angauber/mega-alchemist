@@ -19,9 +19,9 @@ pub enum Weapon {
 pub enum WeaponStatistic {
     Range,
     Damage,
+    Size,
     AttackSpeed,
     ProjectileSpeed,
-    ProjectileSize,
     ProjectileCount,
 }
 
@@ -82,7 +82,7 @@ pub fn throwable_weapon_build(
             StatisticData::from_base_value(weapon_damage),
         ),
         (
-            WeaponStatistic::ProjectileSize,
+            WeaponStatistic::Size,
             StatisticData::from_base_value(projectile_size),
         ),
         (

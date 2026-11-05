@@ -116,7 +116,7 @@ impl PlayerBuild {
         &mut self,
         offer: &WeaponTransmutationOffer,
     ) -> Result<(), &str> {
-        let mut build = self
+        let build = self
             .weapon_builds
             .get_mut(&offer.weapon)
             .ok_or("weapon not found")?;
@@ -132,8 +132,8 @@ impl PlayerBuild {
         Ok(())
     }
 
-    pub fn weapons(&self) -> Vec<Weapon> {
-        self.weapon_builds.keys().cloned().collect()
+    pub fn weapon_builds(&self) -> Vec<&WeaponBuild> {
+        self.weapon_builds.values().collect()
     }
 
     pub fn weapon_build(&self, weapon: &Weapon) -> Result<&WeaponBuild, &str> {
@@ -175,7 +175,7 @@ impl PlayerBuild {
     pub fn weapon_projectile_size(&self, weapon: &Weapon) -> Result<f32, &str> {
         let weapon_projectile_size = self
             .weapon_build(weapon)?
-            .get_stat(&WeaponStatistic::ProjectileSize)?;
+            .get_stat(&WeaponStatistic::Size)?;
 
         Ok(weapon_projectile_size.computed_value(self.projectile_size))
     }
