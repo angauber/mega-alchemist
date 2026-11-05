@@ -4068,6 +4068,7 @@ dependencies = [
  "bevy_ecs_ldtk",
  "bevy_rapier2d",
  "getrandom 0.4.3",
+ "log",
  "rand",
 ]
 

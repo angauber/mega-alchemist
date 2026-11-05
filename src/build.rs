@@ -1,3 +1,5 @@
+use crate::transmutation::TransmutationEffect::{Add, Multiply};
+use crate::transmutation::{TransmutationEffect, WeaponTransmutation, WeaponTransmutationOffer};
 use crate::weapon::Weapon;
 use crate::weapon::WeaponStatistic;
 use bevy::prelude::*;
@@ -24,6 +26,17 @@ impl StatisticData {
         }
     }
 
+    pub fn apply_effect(&mut self, effect: &TransmutationEffect) {
+        match effect {
+            Add(count) => {
+                self.base_value += *count as f32;
+            }
+            Multiply(multiplier) => {
+                self.modifier += multiplier;
+            }
+        }
+    }
+
     pub fn computed_value(&self, player_mod: f32) -> f32 {
         self.base_value * global_multiplier(player_mod, self.modifier)
     }
@@ -41,8 +54,23 @@ pub struct WeaponBuild {
 }
 
 impl WeaponBuild {
+    pub fn statistics(&self) -> Vec<WeaponStatistic> {
+        self.stats.keys().cloned().collect()
+    }
+
     pub fn get_stat(&self, stat: &WeaponStatistic) -> Result<&StatisticData, &str> {
         self.stats.get(stat).ok_or("start not part of build")
+    }
+
+    pub fn apply_transmutation(&mut self, transmutation: &WeaponTransmutation) -> Result<(), &str> {
+        let stat = self
+            .stats
+            .get_mut(&transmutation.statistic)
+            .ok_or("start not part of build")?;
+
+        stat.apply_effect(&transmutation.effect);
+
+        Ok(())
     }
 }
 
@@ -84,9 +112,25 @@ impl PlayerBuild {
         self.weapon_builds.insert(weapon, weapon.build());
     }
 
-    // pub fn transmute_weapon(&mut self) {
-    //
-    // }
+    pub fn apply_weapon_transmutation(
+        &mut self,
+        offer: &WeaponTransmutationOffer,
+    ) -> Result<(), &str> {
+        let mut build = self
+            .weapon_builds
+            .get_mut(&offer.weapon)
+            .ok_or("weapon not found")?;
+
+        for transmutation_option in &offer.transmutations {
+            let Some(transmutation) = transmutation_option else {
+                continue;
+            };
+
+            build.apply_transmutation(transmutation)?;
+        }
+
+        Ok(())
+    }
 
     pub fn weapons(&self) -> Vec<Weapon> {
         self.weapon_builds.keys().cloned().collect()

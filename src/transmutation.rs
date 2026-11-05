@@ -5,6 +5,7 @@ use crate::ui::transmutation::{DisplayTransmutationOffers, TransmutationTextOffe
 use crate::weapon::WeaponStatistic::*;
 use crate::weapon::{Weapon, WeaponStatistic};
 use bevy::prelude::*;
+use log::warn;
 use rand::prelude::IndexedRandom;
 
 pub struct TransmutationPlugin;
@@ -71,33 +72,29 @@ impl TransmutationOffers {
     }
 }
 
-fn weapon_statistics(weapon: &Weapon) -> Vec<WeaponStatistic> {
-    match weapon {
-        Weapon::Knife => vec![Range, Damage, AttackSpeed, ProjectileSpeed, ProjectileCount],
-    }
-}
-
 // each weapon will have different stats that can be upgraded
 // each weapon should have an associated list of transmutable statistics
 // TODO cut into multiple functions
-fn random_weapon_transmutation_offer(weapons: Vec<Weapon>) -> Option<WeaponTransmutationOffer> {
-    let Some(random_weapon) = weapons.choose(&mut rand::rng()) else {
-        return None;
-    };
+fn random_weapon_transmutation_offer(
+    player_build: &PlayerBuild,
+) -> Result<WeaponTransmutationOffer, &str> {
+    let weapons = player_build.weapons();
 
-    let weapon_statistics = weapon_statistics(random_weapon);
+    let random_weapon = weapons.choose(&mut rand::rng()).ok_or("No weapons found")?;
 
-    // TODO weighted draw for number of Transmutation t = (1, 2, 3)
+    let weapon_statistics = player_build.weapon_build(random_weapon)?.statistics();
+
+    // TODO weighted draw for number of Transmutation t = [1 - 3]
 
     // TODO choose t random stat from this weapon using choose_iter
-    let Some(random_statistic) = weapon_statistics.choose(&mut rand::rng()) else {
-        return None;
-    };
+    let random_statistic = weapon_statistics
+        .choose(&mut rand::rng())
+        .ok_or("No statistics found")?;
 
     // TODO weighted draw for random multiplier (0.02, 0.05, 0.07, 0.08, 0.1, 0.15)
     let random_effect: TransmutationEffect = match random_statistic {
         ProjectileCount => Add(1),
-        _ => Multiply(0.05),
+        _ => Multiply(0.10),
     };
 
     let random_transmutation = WeaponTransmutation {
@@ -105,7 +102,7 @@ fn random_weapon_transmutation_offer(weapons: Vec<Weapon>) -> Option<WeaponTrans
         effect: random_effect,
     };
 
-    Some(WeaponTransmutationOffer {
+    Ok(WeaponTransmutationOffer {
         weapon: *random_weapon,
         transmutations: [None, Some(random_transmutation), None],
     })
@@ -142,17 +139,17 @@ fn draw_transmutation_offers(
     mut commands: Commands,
 ) {
     // TODO allow reroll
-    let Some(a) = random_weapon_transmutation_offer(player_build.weapons()) else {
+    let Ok(a) = random_weapon_transmutation_offer(&player_build) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
 
-    let Some(b) = random_weapon_transmutation_offer(player_build.weapons()) else {
+    let Ok(b) = random_weapon_transmutation_offer(&player_build) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
 
-    let Some(c) = random_weapon_transmutation_offer(player_build.weapons()) else {
+    let Ok(c) = random_weapon_transmutation_offer(&player_build) else {
         warn!("Failed to draw a random weapon transmutation");
         return;
     };
@@ -170,26 +167,23 @@ fn draw_transmutation_offers(
     })
 }
 
-fn apply_weapon_transmutation_offer(transmutation: WeaponTransmutationOffer) {
-    // TODO for each transmutation stat trigger an event, ex: update_projectile_count_multiplier
-
-    info!("Applying weapon transmutation: {:?}", transmutation);
-}
-
 fn apply_transmutation_offer(
     event: On<ApplyTransmutationOffer>,
     offers: Res<TransmutationOffers>,
-    player_build: ResMut<PlayerBuild>,
+    mut player_build: ResMut<PlayerBuild>,
 ) {
     let offer = offers.get(event.0);
 
     if let NewWeapon(new_weapon) = offer {
-        // TODO trigger new_weapon_unlocked event
+        // TODO trigger unlocknew_weapon_unlocked event
     }
 
-    if let WeaponTransmute(weapon_transmutation) = offer {
-        // player_build.
-        apply_weapon_transmutation_offer(weapon_transmutation);
+    if let WeaponTransmute(transmutation) = offer {
+        info!("Applying weapon transmutation: {:?}", transmutation);
+
+        if let Err(msg) = player_build.apply_weapon_transmutation(&transmutation) {
+            warn!("failed to apply weapon transmutation offer {}", msg);
+        }
     }
 }
 
