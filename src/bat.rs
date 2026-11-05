@@ -1,8 +1,8 @@
 use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
+use crate::assets::MonsterAssets;
 use crate::attack::ContactAttack;
 use crate::health::Health;
-use crate::sprite_assets::MonsterAssets;
 use bevy::app::{App, Plugin};
 use bevy::image::TextureAtlas;
 use bevy::log::info;

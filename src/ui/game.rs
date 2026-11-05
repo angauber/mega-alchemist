@@ -1,9 +1,10 @@
+use crate::asset_tracking::LoadResource;
+use crate::assets::FontAssets;
 use crate::game::GameClock;
 use crate::health::Health;
 use crate::player::Player;
 use crate::ui::text::UiTextBundle;
 use bevy::app::{App, Plugin};
-use bevy::asset::AssetServer;
 use bevy::color::Color;
 use bevy::prelude::*;
 
@@ -29,8 +30,8 @@ struct PlayerHealthUI;
 #[derive(Component, Default)]
 struct GameClockUI;
 
-fn setup_game_ui_node(mut commands: Commands, assets: Res<AssetServer>) {
-    let font_handle = assets.load("fonts/Pixuf.ttf");
+fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
+    let font_handle = font_assets.pixuf_font.clone();
 
     commands
         .spawn((
@@ -105,9 +106,11 @@ fn update_game_clock_text(
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_game_ui_node).add_systems(
-            PostUpdate,
-            (update_player_health_text, update_game_clock_text),
-        );
+        app.load_resource::<FontAssets>()
+            .add_systems(Startup, setup_game_ui_node)
+            .add_systems(
+                PostUpdate,
+                (update_player_health_text, update_game_clock_text),
+            );
     }
 }

@@ -1,3 +1,5 @@
+use crate::asset_tracking::LoadResource;
+use crate::assets::FontAssets;
 use crate::game::{EnemyCounter, InGameSystems};
 use crate::spawn_manager::SpawnManager;
 use crate::ui::game::GameMainTextUiNode;
@@ -23,12 +25,11 @@ fn setup_debug_ui_nodes(
     spawn_manager: Res<SpawnManager>,
     asset_server: Res<AssetServer>,
     diagnostic: Res<DiagnosticsStore>,
+    font_assets: Res<FontAssets>,
 ) {
     let Ok(game_ui_entity) = game_ui_query.single() else {
         return;
     };
-
-    let font = FontSource::Handle(asset_server.load("fonts/Pixuf.ttf"));
 
     commands
         .entity(game_ui_entity)
@@ -38,7 +39,7 @@ fn setup_debug_ui_nodes(
                 text: fps_text(diagnostic),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
-                    font: font.clone(),
+                    font: font_assets.pixuf_font.clone(),
                     font_size: FontSize::Px(32.),
                     ..default()
                 },
@@ -51,7 +52,7 @@ fn setup_debug_ui_nodes(
                 text: enemy_count_text(enemy_counter.count),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
-                    font: font.clone(),
+                    font: font_assets.pixuf_font.clone(),
                     font_size: FontSize::Px(32.),
                     ..default()
                 },
@@ -64,7 +65,7 @@ fn setup_debug_ui_nodes(
                 text: bank_value_text(spawn_manager.bank_value()),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
-                    font: font.clone(),
+                    font: font_assets.pixuf_font.clone(),
                     font_size: FontSize::Px(32.),
                     ..default()
                 },
@@ -77,7 +78,7 @@ fn setup_debug_ui_nodes(
                 text: bank_budget_text(spawn_manager.bank_budget()),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
-                    font,
+                    font: font_assets.pixuf_font,
                     font_size: FontSize::Px(32.),
                     ..default()
                 },
@@ -157,6 +158,7 @@ fn bank_budget_text(bank_budget: f32) -> Text {
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+            .load_resource::<FontAssets>()
             .add_systems(
                 Update,
                 (

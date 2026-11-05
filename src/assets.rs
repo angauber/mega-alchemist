@@ -16,6 +16,30 @@ pub struct MonsterAssets {
     pub texture_atlas_layout: Handle<TextureAtlasLayout>,
 }
 
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct FontAssets {
+    pub pixuf_font: Handle<Font>,
+}
+
+impl FromWorld for ItemAssets {
+    fn from_world(world: &mut World) -> Self {
+        let sprite = world
+            .resource::<AssetServer>()
+            .load("tileset/32rogues/items.png");
+
+        let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 11, 26, None, None);
+        let texture_atlas_layout = world
+            .resource_mut::<Assets<TextureAtlasLayout>>()
+            .add(layout);
+
+        Self {
+            sprite,
+            texture_atlas_layout,
+        }
+    }
+}
+
 impl FromWorld for MonsterAssets {
     fn from_world(world: &mut World) -> Self {
         let sprite = world
@@ -34,20 +58,10 @@ impl FromWorld for MonsterAssets {
     }
 }
 
-impl FromWorld for ItemAssets {
+impl FromWorld for FontAssets {
     fn from_world(world: &mut World) -> Self {
-        let sprite = world
-            .resource::<AssetServer>()
-            .load("tileset/32rogues/items.png");
+        let pixuf_font = world.resource::<AssetServer>().load("fonts/Pixuf.ttf");
 
-        let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 11, 26, None, None);
-        let texture_atlas_layout = world
-            .resource_mut::<Assets<TextureAtlasLayout>>()
-            .add(layout);
-
-        Self {
-            sprite,
-            texture_atlas_layout,
-        }
+        Self { pixuf_font }
     }
 }

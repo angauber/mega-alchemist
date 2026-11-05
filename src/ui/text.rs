@@ -1,5 +1,6 @@
+use crate::asset_tracking::LoadResource;
+use crate::assets::FontAssets;
 use bevy::app::{App, Plugin, Update};
-use bevy::asset::AssetServer;
 use bevy::camera::Camera2d;
 use bevy::color::Color;
 use bevy::log::info;
@@ -74,10 +75,10 @@ fn render_ui_text(
     mut commands: Commands,
     mut ui_text_event: MessageReader<RenderUiText>,
     camera_query: Query<&Transform, With<Camera2d>>,
-    assets: Res<AssetServer>,
+    font_assets: Res<FontAssets>,
 ) {
     for event in ui_text_event.read() {
-        let font_handle = assets.load("fonts/Pixuf.ttf");
+        let font_handle = font_assets.pixuf_font.clone();
 
         let camera_transform = camera_query.single().unwrap();
         let mut default_transform = *camera_transform;
@@ -121,7 +122,8 @@ fn clear_ui_entities(
 
 impl Plugin for TextUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<RenderUiText>()
+        app.load_resource::<FontAssets>()
+            .add_message::<RenderUiText>()
             .add_systems(Update, render_ui_text)
             .add_systems(Update, clear_ui_entities);
     }

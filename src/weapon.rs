@@ -64,7 +64,9 @@ pub struct TargetReserved {
 
 impl Default for TargetReserved {
     fn default() -> Self {
-        TargetReserved { timer: Timer::new(Duration::from_millis(100), TimerMode::Once) }
+        TargetReserved {
+            timer: Timer::new(Duration::from_millis(100), TimerMode::Once),
+        }
     }
 }
 
@@ -255,7 +257,12 @@ impl Plugin for WeaponPlugin {
             .add_systems(PreUpdate, weapon_cooldown_system.in_set(InGameSystems))
             .add_systems(
                 Update,
-                (spawn_player_default_weapon, throw_projectiles, clear_reserved_targets).in_set(InGameSystems),
+                (
+                    spawn_player_default_weapon,
+                    throw_projectiles,
+                    clear_reserved_targets,
+                )
+                    .in_set(InGameSystems),
             );
     }
 }
