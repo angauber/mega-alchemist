@@ -57,6 +57,17 @@ pub struct WeaponProjectileCounter {
     pub count: usize,
 }
 
+#[derive(Component)]
+pub struct TargetReserved {
+    timer: Timer,
+}
+
+impl Default for TargetReserved {
+    fn default() -> Self {
+        TargetReserved { timer: Timer::new(Duration::from_millis(100), TimerMode::Once) }
+    }
+}
+
 pub fn throwable_weapon_build(
     weapon_range: f32,
     weapon_cooldown: Duration,
@@ -122,12 +133,26 @@ fn weapon_cooldown_system(
     }
 }
 
+fn clear_reserved_targets(
+    mut commands: Commands,
+    mut reserved_targets: Query<(Entity, &mut TargetReserved)>,
+    time: Res<Time>,
+) {
+    for (entity, mut target) in reserved_targets.iter_mut() {
+        target.timer.tick(time.delta());
+
+        if target.timer.is_finished() {
+            commands.entity(entity).remove::<TargetReserved>();
+        }
+    }
+}
+
 fn throw_projectiles(
     mut commands: Commands,
     player_position: Query<&Transform, With<Player>>,
     weapon_query: Query<(Entity, &Weapon), (With<ThrowableWeapon>, Without<WeaponCooldown>)>,
     mut projectile_counter_query: Query<&mut WeaponProjectileCounter, With<Weapon>>,
-    enemies_query: Query<(Entity, &Transform), With<Enemy>>,
+    enemies_query: Query<(Entity, &Transform), (With<Enemy>, Without<TargetReserved>)>,
     player_build: Res<PlayerBuild>,
 ) {
     let Ok(player_transform) = player_position.single() else {
@@ -194,6 +219,8 @@ fn throw_projectiles(
                 damage,
             });
 
+            commands.entity(enemy).insert(TargetReserved::default());
+
             projectile_counter.count += 1;
 
             if projectile_counter.count == projectile_count {
@@ -228,7 +255,7 @@ impl Plugin for WeaponPlugin {
             .add_systems(PreUpdate, weapon_cooldown_system.in_set(InGameSystems))
             .add_systems(
                 Update,
-                (spawn_player_default_weapon, throw_projectiles).in_set(InGameSystems),
+                (spawn_player_default_weapon, throw_projectiles, clear_reserved_targets).in_set(InGameSystems),
             );
     }
 }
