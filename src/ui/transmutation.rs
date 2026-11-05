@@ -1,12 +1,12 @@
 use crate::game::GameState;
-use crate::transmutation::WeaponTransmutationOffer;
+use crate::transmutation::TransmutationOffer::{NewWeapon, WeaponTransmute};
+use crate::transmutation::{ApplyTransmutationOffer, TransmutationOffer};
+use crate::ui::game::{BROWN, DARK_GRAY};
 use bevy::prelude::*;
 use bevy::text::FontSourceTemplate;
 use bevy::ui_widgets::Button;
-use crate::ui::game::{BROWN, DARK_GRAY};
 
 pub struct TransmutationUiPlugin;
-
 
 #[derive(Event, Clone)]
 pub struct DisplayTransmutationOffers {
@@ -17,10 +17,9 @@ pub struct DisplayTransmutationOffers {
 
 #[derive(Clone)]
 pub struct TransmutationTextOffer {
-    identifier: usize,
-    offer_type: String,
-    entity_name: String,
-    effects: [String; 3],
+    pub(crate) offer_type: String,
+    pub(crate) entity_name: String,
+    pub(crate) effects: [String; 3],
 }
 
 #[derive(Component, Default, Clone)]
@@ -28,21 +27,6 @@ pub struct TransmutationOffersRootNode;
 
 #[derive(Component, Default, Clone)]
 struct OfferIdentifier(usize);
-
-impl From<WeaponTransmutationOffer> for TransmutationTextOffer {
-    fn from(value: WeaponTransmutationOffer) -> Self {
-        TransmutationTextOffer {
-            identifier: value.identifier,
-            offer_type: "Weapon Transmutation".to_string(),
-            entity_name: format!("{:?}", value.weapon),
-            effects: value.transmutations.map(|transmutation| {
-                transmutation
-                    .map(|transmutation| transmutation.text())
-                    .unwrap_or(String::default())
-            }),
-        }
-    }
-}
 
 fn render_transmutation_ui(event: On<DisplayTransmutationOffers>, mut commands: Commands) {
     commands.spawn_scene(transmutation_ui(
@@ -70,6 +54,8 @@ fn pick_offer(
         warn!("no root ui found");
         return;
     };
+
+    commands.trigger(ApplyTransmutationOffer(picked_offer_id.0));
 
     commands.entity(root_node).despawn();
 
@@ -116,18 +102,17 @@ fn transmutation_ui(
                     }
                 ]
                 --
-                @transmutation_offer_ui(a)
+                @transmutation_offer_ui(a, 0)
                 --
-                @transmutation_offer_ui(b)
+                @transmutation_offer_ui(b, 1)
                 --
-                @transmutation_offer_ui(c)
+                @transmutation_offer_ui(c, 2)
             ]
         ]
     }
 }
 
-fn transmutation_offer_ui(offer: TransmutationTextOffer) -> impl Scene {
-    let offer_identifier = offer.identifier;
+fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize) -> impl Scene {
     let offer_type = offer.offer_type;
     let entity_name = offer.entity_name;
     let effects = offer.effects;

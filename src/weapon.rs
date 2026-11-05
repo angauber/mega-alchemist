@@ -1,23 +1,40 @@
 use crate::agent::Enemy;
-use crate::build::PlayerBuild;
+use crate::build::{PlayerBuild, StatisticData, WeaponBuild};
 use crate::game::InGameSystems;
 use crate::player::Player;
 use crate::projectile::{ProjectilePlugin, ThrowProjectile};
+use crate::weapon::Weapon::Knife;
 use bevy::prelude::*;
+use std::collections::HashMap;
 use std::time::Duration;
+
 pub struct WeaponPlugin;
 
-fn global_multiplier(a: f32, b: f32) -> f32 {
-    1. + (a - 1.) + (b - 1.)
-}
-
-#[derive(Debug)]
-pub enum WeaponType {
+#[derive(Component, Copy, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum Weapon {
     Knife,
 }
 
-#[derive(Component)]
-pub struct Weapon;
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum WeaponStatistic {
+    Range,
+    Damage,
+    AttackSpeed,
+    ProjectileSpeed,
+    ProjectileSize,
+    ProjectileCount,
+}
+
+impl Weapon {
+    pub fn build(&self) -> WeaponBuild {
+        match self {
+            Knife => WeaponBuild {
+                weapon: Knife,
+                stats: knife_build(),
+            },
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct ThrowableWeapon;
@@ -27,90 +44,66 @@ pub struct WeaponCooldown {
     pub cooldown: Timer,
 }
 
-#[derive(Component)]
-pub struct WeaponRange {
-    pub range: f32,
-    pub multiplier: f32,
-}
-
-#[derive(Component)]
-pub struct WeaponAttackSpeed {
-    pub duration: Duration,
-    pub multiplier: f32,
-}
-
-impl WeaponAttackSpeed {
-    pub fn cooldown(&self, player_attack_speed: f32) -> WeaponCooldown {
+impl From<Duration> for WeaponCooldown {
+    fn from(value: Duration) -> Self {
         WeaponCooldown {
-            cooldown: Timer::new(
-                self.duration
-                    .div_f32(global_multiplier(self.multiplier, player_attack_speed)),
-                TimerMode::Once,
-            ),
+            cooldown: Timer::new(value, TimerMode::Once),
         }
     }
 }
 
 #[derive(Component)]
-pub struct WeaponDamage {
-    pub damage: f32,
-    pub multiplier: f32,
+pub struct WeaponProjectileCounter {
+    pub count: usize,
 }
 
-#[derive(Component)]
-pub struct WeaponProjectileSize {
-    pub size: f32,
-    pub multiplier: f32,
-}
-
-#[derive(Component)]
-pub struct WeaponProjectileSpeed {
-    pub speed: f32,
-    pub multiplier: f32,
-}
-
-#[derive(Component)]
-pub struct WeaponProjectileCount {
-    pub total: usize,
-    pub used: usize,
-}
-
-pub fn throwable_weapon(
+pub fn throwable_weapon_build(
     weapon_range: f32,
     weapon_cooldown: Duration,
     weapon_damage: f32,
     projectile_size: f32,
     projectile_speed: f32,
-) -> impl Bundle {
-    (
-        Weapon,
-        ThrowableWeapon,
-        WeaponRange {
-            range: weapon_range,
-            multiplier: 1.0,
-        },
-        WeaponAttackSpeed {
-            duration: weapon_cooldown,
-            multiplier: 1.0,
-        },
-        WeaponDamage {
-            damage: weapon_damage,
-            multiplier: 1.0,
-        },
-        WeaponProjectileCount { total: 1, used: 0 },
-        WeaponProjectileSize {
-            size: projectile_size,
-            multiplier: 1.0,
-        },
-        WeaponProjectileSpeed {
-            speed: projectile_speed,
-            multiplier: 1.0,
-        },
-    )
+) -> HashMap<WeaponStatistic, StatisticData> {
+    vec![
+        (
+            WeaponStatistic::ProjectileCount,
+            StatisticData::from_base_value(1.0),
+        ),
+        (
+            WeaponStatistic::Range,
+            StatisticData::from_base_value(weapon_range),
+        ),
+        (
+            WeaponStatistic::AttackSpeed,
+            StatisticData::from_base_value(weapon_cooldown.as_millis() as f32),
+        ),
+        (
+            WeaponStatistic::Damage,
+            StatisticData::from_base_value(weapon_damage),
+        ),
+        (
+            WeaponStatistic::ProjectileSize,
+            StatisticData::from_base_value(projectile_size),
+        ),
+        (
+            WeaponStatistic::ProjectileSpeed,
+            StatisticData::from_base_value(projectile_speed),
+        ),
+    ]
+    .into_iter()
+    .collect()
+}
+
+pub fn knife_build() -> HashMap<WeaponStatistic, StatisticData> {
+    throwable_weapon_build(200.0, Duration::from_millis(1500), 10.0, 2.0, 150.0)
+}
+
+pub fn throwable_weapon() -> impl Bundle {
+    (ThrowableWeapon, WeaponProjectileCounter { count: 0 })
 }
 
 fn knife() -> impl Bundle {
-    throwable_weapon(200.0, Duration::from_millis(1500), 10.0, 2.0, 150.0)
+    (throwable_weapon(), Knife)
 }
 
 fn weapon_cooldown_system(
@@ -132,18 +125,8 @@ fn weapon_cooldown_system(
 fn throw_projectiles(
     mut commands: Commands,
     player_position: Query<&Transform, With<Player>>,
-    weapon_query: Query<
-        (
-            Entity,
-            &WeaponRange,
-            &WeaponDamage,
-            &WeaponProjectileSpeed,
-            &WeaponProjectileSize,
-            &WeaponAttackSpeed,
-        ),
-        (With<Weapon>, Without<WeaponCooldown>),
-    >,
-    mut weapon_projectile_count_query: Query<&mut WeaponProjectileCount, With<Weapon>>,
+    weapon_query: Query<(Entity, &Weapon), (With<ThrowableWeapon>, Without<WeaponCooldown>)>,
+    mut projectile_counter_query: Query<&mut WeaponProjectileCounter, With<Weapon>>,
     enemies_query: Query<(Entity, &Transform), With<Enemy>>,
     player_build: Res<PlayerBuild>,
 ) {
@@ -152,23 +135,39 @@ fn throw_projectiles(
     };
     let player_position = player_transform.translation.xy();
 
-    for (weapon, weapon_range, weapon_damage, projectile_speed, projectile_size, attack_speed) in
-        weapon_query
-    {
-        let Ok(mut projectile_count) = weapon_projectile_count_query.get_mut(weapon) else {
+    for (weapon_entity, weapon) in weapon_query {
+        let Ok(mut projectile_counter) = projectile_counter_query.get_mut(weapon_entity) else {
             continue;
         };
 
-        let range =
-            weapon_range.range * global_multiplier(weapon_range.multiplier, player_build.range);
-        let speed = projectile_speed.speed
-            * global_multiplier(projectile_speed.multiplier, player_build.projectile_speed);
-        let size = projectile_size.size
-            * global_multiplier(projectile_size.multiplier, player_build.projectile_size);
-        let damage =
-            weapon_damage.damage * global_multiplier(weapon_damage.multiplier, player_build.damage);
+        let Ok(cooldown_duration) = player_build.weapon_cooldown(weapon) else {
+            warn!("cooldown missing for {:?}", weapon);
+            continue;
+        };
 
-        let count = projectile_count.total + player_build.projectile_count;
+        let Ok(projectile_count) = player_build.weapon_projectile_count(weapon) else {
+            warn!("projectile count missing for {:?}", weapon);
+            continue;
+        };
+
+        let Ok(range) = player_build.weapon_range(weapon) else {
+            warn!("range missing for {:?}", weapon);
+            continue;
+        };
+
+        let Ok(speed) = player_build.weapon_projectile_speed(weapon) else {
+            warn!("projectile speed missing for {:?}", weapon);
+            continue;
+        };
+
+        let Ok(size) = player_build.weapon_projectile_size(weapon) else {
+            warn!("projectile size missing for {:?}", weapon);
+            continue;
+        };
+        let Ok(damage) = player_build.weapon_damage(weapon) else {
+            warn!("damage missing for {:?}", weapon);
+            continue;
+        };
 
         let mut in_range_enemies = enemies_query
             .iter()
@@ -186,7 +185,7 @@ fn throw_projectiles(
 
         'enemy: for (enemy, enemy_transform) in in_range_enemies {
             commands.trigger(ThrowProjectile {
-                weapon,
+                weapon: weapon_entity,
                 target: enemy,
                 target_transform: *enemy_transform,
                 range,
@@ -195,14 +194,14 @@ fn throw_projectiles(
                 damage,
             });
 
-            projectile_count.used += 1;
+            projectile_counter.count += 1;
 
-            if projectile_count.used == count {
+            if projectile_counter.count == projectile_count {
                 commands
-                    .entity(weapon)
-                    .insert(attack_speed.cooldown(player_build.attack_speed));
+                    .entity(weapon_entity)
+                    .insert(WeaponCooldown::from(cooldown_duration));
 
-                projectile_count.used = 0;
+                projectile_counter.count = 0;
 
                 break 'enemy;
             }
@@ -210,11 +209,16 @@ fn throw_projectiles(
     }
 }
 
-fn spawn_player_weapon(mut commands: Commands, player_query: Query<Entity, Added<Player>>) {
+fn spawn_player_default_weapon(
+    mut commands: Commands,
+    player_query: Query<Entity, Added<Player>>,
+    mut player_build: ResMut<PlayerBuild>,
+) {
     let Ok(player_entity) = player_query.single() else {
         return;
     };
 
+    player_build.add_weapon(Knife);
     commands.entity(player_entity).with_child(knife());
 }
 
@@ -224,7 +228,7 @@ impl Plugin for WeaponPlugin {
             .add_systems(PreUpdate, weapon_cooldown_system.in_set(InGameSystems))
             .add_systems(
                 Update,
-                (spawn_player_weapon, throw_projectiles).in_set(InGameSystems),
+                (spawn_player_default_weapon, throw_projectiles).in_set(InGameSystems),
             );
     }
 }

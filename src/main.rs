@@ -13,6 +13,7 @@ use crate::physics::PhysicsPlugin;
 use crate::player::PlayerPlugin;
 use crate::spawn_manager::SpawnManagerPlugin;
 use crate::spawner::SpawnerPlugin;
+use crate::transmutation::TransmutationPlugin;
 use crate::ui::UiPlugin;
 use crate::wall::WallPlugin;
 use crate::weapon::WeaponPlugin;
@@ -63,6 +64,7 @@ fn main() {
         .add_plugins(GamePlugin)
         .add_plugins(UiPlugin)
         .add_plugins(LevelPlugin)
+        .add_plugins(TransmutationPlugin)
         .add_plugins(WallPlugin)
         .add_plugins(BuildPlugin)
         .add_plugins(PlayerPlugin)
