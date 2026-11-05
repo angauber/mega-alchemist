@@ -67,7 +67,7 @@ impl Default for SpawnManager {
             weights: SpawnWeights::default(),
             memory: None,
             bank_value: 0.0,
-            bank_budget: 5.0,
+            bank_budget: 3.0,
         }
     }
 }
@@ -87,7 +87,7 @@ impl SpawnManager {
     }
 
     pub fn increase_bank_budget(&mut self, dt: f32) {
-        self.bank_budget += dt * 0.01
+        self.bank_budget += dt * 0.06
     }
 
     pub fn spawnable_enemy(&mut self) -> Option<Enemy> {

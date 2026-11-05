@@ -102,7 +102,9 @@ impl WeaponTransmutationOfferPool {
     }
 
     fn total_stats(&self) -> usize {
-        self.weapon_stats_pool.values().map(|stats| stats.len())
+        self.weapon_stats_pool
+            .values()
+            .map(|stats| stats.len())
             .sum()
     }
 
@@ -111,8 +113,8 @@ impl WeaponTransmutationOfferPool {
         let reserved_budget = self.total_stats() - offers_left;
         let budget = min(weapon_sat, reserved_budget);
 
-        let stat_options: Vec<usize> = [1, 2, 3].into_iter().take(budget).collect();
-        let stat_weights: Vec<usize> = [25, 10, 1].into_iter().take(budget).collect();
+        let stat_options: Vec<usize> = [1, 2].into_iter().take(budget).collect();
+        let stat_weights: Vec<usize> = [8, 2].into_iter().take(budget).collect();
 
         let mut rng = rand::rng();
         let weighted_index = WeightedIndex::new(&stat_weights).unwrap();
@@ -136,6 +138,15 @@ impl WeaponTransmutationOfferPool {
         }
     }
 
+    fn statistic_weight(stat: &WeaponStatistic) -> f64 {
+        match stat {
+            WeaponStatistic::Damage => 5.,
+            WeaponStatistic::AttackSpeed => 2.,
+            WeaponStatistic::ProjectileCount => 1.,
+            _ => 3.,
+        }
+    }
+
     fn draw_random_weapon_stats(
         &mut self,
         weapon: &Weapon,
@@ -146,9 +157,10 @@ impl WeaponTransmutationOfferPool {
 
         let mut rng = rand::rng();
 
-        // TODO add statistics weights
-        let Ok(sampled_weights) = available_stats.sample_weighted(&mut rng, stat_count, |_stat| 1)
-        else {
+        let sampled_result =
+            available_stats.sample_weighted(&mut rng, stat_count, Self::statistic_weight);
+
+        let Ok(sampled_weights) = sampled_result else {
             warn!("could not sample weights to draw weapon stats");
             return Vec::new();
         };

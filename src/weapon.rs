@@ -95,7 +95,7 @@ pub fn throwable_weapon_build(
 }
 
 pub fn knife_build() -> HashMap<WeaponStatistic, StatisticData> {
-    throwable_weapon_build(200.0, Duration::from_millis(1500), 10.0, 2.0, 150.0)
+    throwable_weapon_build(100.0, Duration::from_millis(1600), 10.0, 2.0, 150.0)
 }
 
 pub fn throwable_weapon() -> impl Bundle {
