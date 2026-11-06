@@ -78,7 +78,7 @@ fn format_player_health_text(health: &Health) -> Text {
 }
 
 fn update_player_health_text(
-    player_health_query: Query<&Health, (Changed<Health>, With<Player>)>,
+    player_health_query: Query<&Health, With<Player>>,
     mut player_health_text_query: Query<&mut Text, With<PlayerHealthUI>>,
 ) {
     let Ok(player_health) = player_health_query.single() else {

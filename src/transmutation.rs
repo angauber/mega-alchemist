@@ -36,25 +36,10 @@ pub struct WeaponTransmutation {
     pub effect: TransmutationEffect,
 }
 
-impl WeaponTransmutation {
-    pub fn text(&self) -> String {
-        format!("{:?} {}", self.statistic, self.effect.to_string())
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum TransmutationEffect {
     Add(usize),
     Multiply(f32),
-}
-
-impl TransmutationEffect {
-    pub fn to_string(&self) -> String {
-        match self {
-            Add(count) => format!("+ {}", count),
-            Multiply(multiplier) => format!("+ {}%", (100. * multiplier) as usize),
-        }
-    }
 }
 
 #[derive(Resource, Clone, Debug)]
@@ -227,27 +212,70 @@ impl WeaponTransmutationOfferPool {
     }
 }
 
-fn transmutation_offer_to_text(offer: TransmutationOffer) -> TransmutationTextOffer {
+fn new_weapon_to_text(weapon: &Weapon) -> TransmutationTextOffer {
+    TransmutationTextOffer {
+        offer_type: "New Weapon".to_string(),
+        entity_name: format!("{:?}", weapon),
+        effects: [
+            "Unlocks a new weapon".to_string(),
+            String::default(),
+            String::default(),
+        ],
+    }
+}
+fn weapon_transmutation_to_text(
+    weapon: &Weapon,
+    transmutation: &WeaponTransmutation,
+    player_build: &PlayerBuild,
+    transmuted_build: &PlayerBuild,
+) -> Result<String, String> {
+    let current_stat_text = player_build.stat_text(weapon, &transmutation.statistic)?;
+    let transmuted_stat_text = transmuted_build.stat_text(weapon, &transmutation.statistic)?;
+
+    Ok(format!(
+        "{:?} {} -> {}",
+        transmutation.statistic, current_stat_text, transmuted_stat_text
+    ))
+}
+
+fn weapon_transmutation_offer_to_text(
+    weapon_transmutation: WeaponTransmutationOffer,
+    player_build: &PlayerBuild,
+) -> TransmutationTextOffer {
+    let mut transmuted_build: PlayerBuild = player_build.clone();
+
+    transmuted_build.apply_weapon_transmutation(&weapon_transmutation);
+
+    let effects = weapon_transmutation.transmutations.map(|transmutation| {
+        transmutation
+            .map(|transmutation| {
+                weapon_transmutation_to_text(
+                    &weapon_transmutation.weapon,
+                    &transmutation,
+                    player_build,
+                    &transmuted_build,
+                )
+                .unwrap_or_default()
+            })
+            .unwrap_or_default()
+    });
+
+    TransmutationTextOffer {
+        offer_type: "Weapon Transmutation".to_string(),
+        entity_name: format!("{:?}", weapon_transmutation.weapon),
+        effects,
+    }
+}
+
+fn transmutation_offer_to_text(
+    player_build: &PlayerBuild,
+    offer: TransmutationOffer,
+) -> TransmutationTextOffer {
     match offer {
-        NewWeapon(weapon) => TransmutationTextOffer {
-            offer_type: "New Weapon".to_string(),
-            entity_name: format!("{:?}", weapon),
-            effects: [
-                "Unlocks a new weapon".to_string(),
-                String::default(),
-                String::default(),
-            ],
-        },
-        WeaponTransmute(weapon_transmutation) => TransmutationTextOffer {
-            offer_type: "Weapon Transmutation".to_string(),
-            entity_name: format!("{:?}", weapon_transmutation.weapon),
-            effects: weapon_transmutation.transmutations.map(|transmutation| {
-                transmutation
-                    // TODO format transmutation text using player weapon real stats
-                    .map(|transmutation| transmutation.text())
-                    .unwrap_or(String::default())
-            }),
-        },
+        NewWeapon(weapon) => new_weapon_to_text(&weapon),
+        WeaponTransmute(weapon_transmutation) => {
+            weapon_transmutation_offer_to_text(weapon_transmutation, player_build)
+        }
     }
 }
 
@@ -282,9 +310,9 @@ fn draw_transmutation_offers(
     });
 
     commands.trigger(DisplayTransmutationOffers {
-        offer_a: transmutation_offer_to_text(WeaponTransmute(a)),
-        offer_b: transmutation_offer_to_text(WeaponTransmute(b)),
-        offer_c: transmutation_offer_to_text(WeaponTransmute(c)),
+        offer_a: transmutation_offer_to_text(&player_build, WeaponTransmute(a)),
+        offer_b: transmutation_offer_to_text(&player_build, WeaponTransmute(b)),
+        offer_c: transmutation_offer_to_text(&player_build, WeaponTransmute(c)),
     })
 }
 
@@ -302,9 +330,7 @@ fn apply_transmutation_offer(
     if let WeaponTransmute(transmutation) = offer {
         info!("Applying weapon transmutation: {:?}", transmutation);
 
-        if let Err(msg) = player_build.apply_weapon_transmutation(&transmutation) {
-            warn!("failed to apply weapon transmutation offer {}", msg);
-        }
+        player_build.apply_weapon_transmutation(&transmutation)
     }
 }
 

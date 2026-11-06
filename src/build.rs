@@ -47,7 +47,7 @@ impl StatisticData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WeaponBuild {
     pub weapon: Weapon,
     pub stats: HashMap<WeaponStatistic, StatisticData>,
@@ -62,19 +62,20 @@ impl WeaponBuild {
         self.stats.get(stat).ok_or("start not part of build")
     }
 
-    pub fn apply_transmutation(&mut self, transmutation: &WeaponTransmutation) -> Result<(), &str> {
+    pub fn apply_transmutation(&mut self, transmutation: &WeaponTransmutation) {
+        let missing_stat_error =
+            format!("stat {:?} not part of WeaponBuild", transmutation.statistic);
+
         let stat = self
             .stats
             .get_mut(&transmutation.statistic)
-            .ok_or("start not part of build")?;
+            .expect(missing_stat_error.as_str());
 
         stat.apply_effect(&transmutation.effect);
-
-        Ok(())
     }
 }
 
-#[derive(Resource, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct PlayerBuild {
     weapon_builds: HashMap<Weapon, WeaponBuild>,
     pub max_health: f32,
@@ -112,24 +113,19 @@ impl PlayerBuild {
         self.weapon_builds.insert(weapon, weapon.build());
     }
 
-    pub fn apply_weapon_transmutation(
-        &mut self,
-        offer: &WeaponTransmutationOffer,
-    ) -> Result<(), &str> {
+    pub fn apply_weapon_transmutation(&mut self, offer: &WeaponTransmutationOffer) {
         let build = self
             .weapon_builds
             .get_mut(&offer.weapon)
-            .ok_or("weapon not found")?;
+            .expect("weapon not found");
 
         for transmutation_option in &offer.transmutations {
             let Some(transmutation) = transmutation_option else {
                 continue;
             };
 
-            build.apply_transmutation(transmutation)?;
+            build.apply_transmutation(transmutation);
         }
-
-        Ok(())
     }
 
     pub fn weapon_builds(&self) -> Vec<&WeaponBuild> {
@@ -187,6 +183,23 @@ impl PlayerBuild {
             .base_value as usize;
 
         Ok(self.projectile_count + weapon_projectile_count)
+    }
+
+    pub fn stat_text(&self, weapon: &Weapon, statistic: &WeaponStatistic) -> Result<String, &str> {
+        let value = match statistic {
+            WeaponStatistic::Range => format!("{:.2}", self.weapon_range(weapon)?),
+            WeaponStatistic::Damage => format!("{:.2}", self.weapon_damage(weapon)?),
+            WeaponStatistic::Size => format!("{:.2}", self.weapon_projectile_size(weapon)?),
+            WeaponStatistic::AttackSpeed => {
+                format!("{:.2} s", self.weapon_cooldown(weapon)?.as_secs_f32())
+            }
+            WeaponStatistic::ProjectileSpeed => {
+                format!("{:.2}", self.weapon_projectile_speed(weapon)?)
+            }
+            WeaponStatistic::ProjectileCount => self.weapon_projectile_count(weapon)?.to_string(),
+        };
+
+        Ok(value)
     }
 }
 

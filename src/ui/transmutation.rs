@@ -124,7 +124,7 @@ fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize
         Button
         on(pick_offer)
         Node {
-            width: px(500),
+            width: px(600),
             min_height: px(100),
             justify_content: JustifyContent::SpaceEvenly,
             align_items: AlignItems::Center,
