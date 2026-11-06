@@ -1,6 +1,5 @@
-use crate::asset_tracking::LoadResource;
 use crate::assets::FontAssets;
-use crate::game::InGameSystems;
+use crate::game::GameState;
 use bevy::app::{App, Plugin, Update};
 use bevy::camera::Camera2d;
 use bevy::color::Color;
@@ -121,7 +120,7 @@ impl Plugin for TextUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<RenderUiText>().add_systems(
             Update,
-            (clear_ui_entities, render_ui_text).in_set(InGameSystems),
+            (clear_ui_entities, render_ui_text).run_if(not(in_state(GameState::Loading))),
         );
     }
 }

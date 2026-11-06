@@ -25,7 +25,7 @@ pub fn entities_health_system(
     player_query: Query<Entity, With<Player>>,
 ) {
     for (entity, health) in &health_query {
-        if health.points <= 0. {
+        if health.points < 1. {
             if player_query.contains(entity) {
                 commands.trigger(GameOver);
             }

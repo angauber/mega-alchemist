@@ -1,4 +1,3 @@
-use crate::asset_tracking::LoadResource;
 use crate::assets::FontAssets;
 use crate::game::{GameClock, GameState, InGameSystems};
 use crate::health::Health;
@@ -111,7 +110,7 @@ impl Plugin for GameUiPlugin {
                 exited: GameState::Loading,
                 entered: GameState::InGame,
             },
-            setup_game_ui_node.in_set(InGameSystems),
+            setup_game_ui_node,
         )
         .add_systems(
             PostUpdate,

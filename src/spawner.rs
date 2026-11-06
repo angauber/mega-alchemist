@@ -1,5 +1,3 @@
-use crate::asset_tracking::LoadResource;
-use crate::assets::MonsterAssets;
 use crate::bat::BatPlugin;
 use crate::skeleton::SkeletonPlugin;
 use bevy::prelude::*;

@@ -1,5 +1,4 @@
 use crate::agent::Enemy;
-use crate::asset_tracking::LoadResource;
 use crate::assets::ItemAssets;
 use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
