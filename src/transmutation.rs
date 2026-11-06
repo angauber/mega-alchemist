@@ -161,7 +161,7 @@ impl WeaponTransmutationOfferPool {
     pub fn draw_transmutation_effect(&self, stat: &WeaponStatistic) -> TransmutationEffect {
         if stat == &WeaponStatistic::ProjectileCount {
             let amounts = [1, 2, 3];
-            let weights = [20, 5, 1];
+            let weights = [20, 8, 1];
 
             let mut rng = rand::rng();
             let weighted_index = WeightedIndex::new(weights).unwrap();
@@ -170,8 +170,8 @@ impl WeaponTransmutationOfferPool {
             return Add(amounts[index]);
         }
 
-        let multipliers = [0.02, 0.04, 0.06, 0.08, 0.10];
-        let weights = [1, 5, 10, 5, 1];
+        let multipliers = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12];
+        let weights = [1, 5, 10, 7, 2, 1];
 
         let mut rng = rand::rng();
         let weighted_index = WeightedIndex::new(weights).unwrap();

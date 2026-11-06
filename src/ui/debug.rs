@@ -1,4 +1,5 @@
 use crate::assets::FontAssets;
+use crate::damage::PlayerDamage;
 use crate::game::{EnemyCounter, InGameSystems};
 use crate::spawn_manager::SpawnManager;
 use crate::ui::game::GameMainTextUiNode;
@@ -13,7 +14,7 @@ struct EnemyCountText;
 #[derive(Component)]
 struct FramePerSecondText;
 #[derive(Component)]
-struct BankValueText;
+struct PlayerDpsText;
 #[derive(Component)]
 struct BankBudgetText;
 
@@ -22,6 +23,7 @@ fn setup_debug_ui_nodes(
     game_ui_query: Query<Entity, Added<GameMainTextUiNode>>,
     enemy_counter: Res<EnemyCounter>,
     spawn_manager: Res<SpawnManager>,
+    player_damage: Res<PlayerDamage>,
     diagnostic: Res<DiagnosticsStore>,
     font_assets: Res<FontAssets>,
 ) {
@@ -60,9 +62,9 @@ fn setup_debug_ui_nodes(
             },
         ))
         .with_child((
-            BankValueText,
+            PlayerDpsText,
             UiTextBundle {
-                text: bank_value_text(spawn_manager.bank_value()),
+                text: player_dps_text(player_damage.per_second),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
                     font: font.clone(),
@@ -109,15 +111,15 @@ fn update_enemy_count_text(
     *enemy_count = enemy_count_text(enemy_counter.count);
 }
 
-fn update_bank_value_text(
-    mut bank_value_query: Query<&mut Text, With<BankValueText>>,
-    spawn_manager: Res<SpawnManager>,
+fn update_player_dps_text(
+    mut player_dps_query: Query<&mut Text, With<PlayerDpsText>>,
+    player_damage: Res<PlayerDamage>,
 ) {
-    let Ok(mut bank_value) = bank_value_query.single_mut() else {
+    let Ok(mut dps_text) = player_dps_query.single_mut() else {
         return;
     };
 
-    *bank_value = bank_value_text(spawn_manager.bank_value());
+    *dps_text = player_dps_text(player_damage.per_second);
 }
 
 fn update_bank_budget_text(
@@ -147,12 +149,12 @@ fn enemy_count_text(enemy_count: usize) -> Text {
     format!("Enemy Count {}", enemy_count).into()
 }
 
-fn bank_value_text(bank_value: f32) -> Text {
-    format!("Bank Value {}", bank_value).into()
+fn player_dps_text(bank_value: f32) -> Text {
+    format!("Player DPS {:.2}", bank_value).into()
 }
 
 fn bank_budget_text(bank_budget: f32) -> Text {
-    format!("Bank Budget {}", bank_budget).into()
+    format!("Bank Budget {:.2}", bank_budget).into()
 }
 
 impl Plugin for DebugPlugin {
@@ -164,7 +166,7 @@ impl Plugin for DebugPlugin {
                     setup_debug_ui_nodes,
                     update_fps_text,
                     update_enemy_count_text,
-                    update_bank_value_text,
+                    update_player_dps_text,
                     update_bank_budget_text,
                 )
                     .in_set(InGameSystems),

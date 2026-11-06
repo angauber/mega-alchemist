@@ -1,5 +1,6 @@
 use crate::bat::SpawnBat;
-use crate::game::{GameOver, InGameSystems};
+use crate::damage::PlayerDamage;
+use crate::game::{GameClock, GameOver, InGameSystems};
 use crate::player::Player;
 use crate::skeleton::SpawnSkeleton;
 use crate::spawn_manager::Enemy::{Bat, Skeleton};
@@ -24,8 +25,8 @@ impl Enemy {
 
     pub fn cost(&self) -> f32 {
         match self {
-            Bat => 10.0,
-            Skeleton => 30.0,
+            Bat => 15.0,
+            Skeleton => 50.0,
         }
     }
 }
@@ -67,7 +68,7 @@ impl Default for SpawnManager {
             weights: SpawnWeights::default(),
             memory: None,
             bank_value: 0.0,
-            bank_budget: 3.0,
+            bank_budget: 0.0,
         }
     }
 }
@@ -84,10 +85,6 @@ impl SpawnManager {
 
     pub fn accumulate_bank_value(&mut self, dt: f32) {
         self.bank_value += self.bank_budget * dt;
-    }
-
-    pub fn increase_bank_budget(&mut self, dt: f32) {
-        self.bank_budget += dt * 0.06
     }
 
     pub fn spawnable_enemy(&mut self) -> Option<Enemy> {
@@ -132,14 +129,34 @@ impl SpawnManager {
             Skeleton => self.weights.skeleton,
         }
     }
+
+    pub fn update_bank_budget(&mut self, in_game_time: f32, player_dps: f32) {
+        let initial_min_budget = 5.0;
+        let time_based_budget = in_game_time * 0.04;
+
+        let min_budget = time_based_budget.max(initial_min_budget);
+        let max_budget = 1_000.;
+
+        let new_budget = player_dps;
+
+        self.bank_budget = new_budget.clamp(min_budget, max_budget);
+    }
+}
+
+fn update_bank_budget(
+    mut spawn_manager: ResMut<SpawnManager>,
+    player_damage: Res<PlayerDamage>,
+    game_clock: Res<GameClock>,
+) {
+    let play_time = game_clock.0.elapsed_secs();
+
+    let dps = player_damage.per_second;
+
+    spawn_manager.update_bank_budget(play_time, dps);
 }
 
 fn accumulate_bank_value(mut spawn_manager: ResMut<SpawnManager>, time: Res<Time>) {
     spawn_manager.accumulate_bank_value(time.delta_secs());
-}
-
-fn increase_bank_budget_over_time(mut spawn_manager: ResMut<SpawnManager>, time: Res<Time>) {
-    spawn_manager.increase_bank_budget(time.delta_secs());
 }
 
 fn spawn_enemy(
@@ -213,12 +230,7 @@ impl Plugin for SpawnManagerPlugin {
             .add_observer(on_game_over)
             .add_systems(
                 Update,
-                (
-                    accumulate_bank_value,
-                    increase_bank_budget_over_time,
-                    spawn_enemy,
-                )
-                    .in_set(InGameSystems),
+                (accumulate_bank_value, update_bank_budget, spawn_enemy).in_set(InGameSystems),
             );
     }
 }

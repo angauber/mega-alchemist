@@ -169,6 +169,7 @@ fn handle_projectile_hit(
         info!("applying {} damage to enemy {}", damage, enemy);
 
         commands.trigger(ApplyDamage {
+            from_player: true,
             entity: enemy,
             damage,
             text_color: None,

@@ -75,6 +75,7 @@ fn attacking_player_damage_system(
         });
 
         commands.trigger(ApplyDamage {
+            from_player: false,
             entity: player_entity,
             damage: contact_attack.damage,
             text_color: Some(Color::linear_rgb(1.0, 0.0, 0.0)),
