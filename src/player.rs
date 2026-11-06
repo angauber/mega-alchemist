@@ -26,7 +26,6 @@ pub struct PlayerBundle {
     #[with(player_rigid_body)]
     rigid_body: RigidBody,
     velocity: Velocity,
-    transform: Transform,
     #[with(player_mass)]
     mass: ColliderMassProperties,
     #[with(player_locked_axes)]
@@ -100,9 +99,17 @@ fn player_movement(
     player_velocity.linear = player_velocity.linear.move_towards(target, rate * dt);
 }
 
+fn player_added(mut player_query: Query<&mut Transform, Added<Player>>) {
+    if let Ok(mut player_transform) = player_query.single_mut() {
+        player_transform.translation.z = 3.0;
+        info!("Player spawned at {}", player_transform.translation);
+    }
+}
+
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<PlayerBundle>("Player")
+            .add_systems(Update, player_added)
             .add_systems(Update, player_movement.in_set(InGameSystems));
     }
 }

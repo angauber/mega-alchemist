@@ -179,8 +179,7 @@ fn spawn_enemy(
         return;
     };
 
-    let mut enemy_position = **chosen_spawner;
-    enemy_position.translation.z = 5.0;
+    let enemy_position = **chosen_spawner;
 
     info!(
         "Spawning enemy {:?} | bank value: {} | enemy cost: {}",
@@ -202,7 +201,7 @@ fn spawn_enemy(
 }
 
 pub fn on_game_over(_event: On<GameOver>, mut spawn_manager: ResMut<SpawnManager>) {
-    info!("spawn manager reseted");
+    info!("spawn manager reset");
     *spawn_manager = SpawnManager::default();
 }
 

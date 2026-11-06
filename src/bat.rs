@@ -67,7 +67,7 @@ pub fn on_spawn_bat(
 
     let spawner_position = event.0;
 
-    info!("Spawning bat at {:?}", spawner_position);
+    info!("Spawning bat at {}", spawner_position.translation);
 
     commands.entity(level_id).with_child(bat(
         &monster_assets,
