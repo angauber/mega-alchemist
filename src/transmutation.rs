@@ -20,6 +20,7 @@ pub struct ApplyTransmutationOffer(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum TransmutationOffer {
+    #[allow(dead_code)]
     NewWeapon(Weapon),
     WeaponTransmute(WeaponTransmutationOffer),
 }
