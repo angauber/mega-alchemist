@@ -1,9 +1,12 @@
+use crate::agent::Enemy;
 use crate::animation::FlippableSprite;
 use crate::build::PlayerBuild;
-use crate::game::InGameSystems;
+use crate::damage::PlayerDamage;
+use crate::game::{GameOver, InGameSystems};
 use crate::health::Health;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
+use bevy_rapier2d::na::clamp;
 use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
@@ -35,6 +38,9 @@ pub struct PlayerBundle {
     #[sprite_sheet]
     sprite: Sprite,
 }
+
+#[derive(Resource, Default)]
+pub struct PlayerPressure(pub(crate) f32);
 
 fn player_health(_: &EntityInstance) -> Health {
     Health::new(PlayerBuild::default().max_health)
@@ -106,10 +112,52 @@ fn player_added(mut player_query: Query<&mut Transform, Added<Player>>) {
     }
 }
 
+fn update_player_pressure(
+    enemy_query: Query<(&Transform, &Health), With<Enemy>>,
+    player_position_query: Query<&Transform, With<Player>>,
+    mut player_pressure: ResMut<PlayerPressure>,
+) {
+    let max_distance = 300.;
+    let mut pressure_points = 0.;
+
+    let Ok(player_position) = player_position_query.single() else {
+        return;
+    };
+
+    for (enemy_position, enemy_health) in &enemy_query {
+        let distance = player_position
+            .translation
+            .xy()
+            .distance(enemy_position.translation.xy());
+
+        // distance based weight, closer enemies = more pressure
+        let weight = clamp(1.0 - distance / max_distance, 0.2, 1.0);
+
+        pressure_points += enemy_health.points * weight;
+    }
+
+    player_pressure.0 = pressure_points;
+}
+
+pub fn on_game_over(
+    _event: On<GameOver>,
+    mut player_pressure: ResMut<PlayerPressure>,
+    mut player_damage: ResMut<PlayerDamage>,
+) {
+    info!("player pressure reset");
+    *player_pressure = PlayerPressure::default();
+    *player_damage = PlayerDamage::default();
+}
+
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.register_ldtk_entity::<PlayerBundle>("Player")
+            .init_resource::<PlayerPressure>()
+            .add_observer(on_game_over)
             .add_systems(Update, player_added)
-            .add_systems(Update, player_movement.in_set(InGameSystems));
+            .add_systems(
+                Update,
+                (update_player_pressure, player_movement).in_set(InGameSystems),
+            );
     }
 }

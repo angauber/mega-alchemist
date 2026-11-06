@@ -1,6 +1,7 @@
 use crate::assets::FontAssets;
 use crate::damage::PlayerDamage;
 use crate::game::{EnemyCounter, InGameSystems};
+use crate::player::PlayerPressure;
 use crate::spawn_manager::SpawnManager;
 use crate::ui::game::GameMainTextUiNode;
 use crate::ui::text::UiTextBundle;
@@ -16,6 +17,8 @@ struct FramePerSecondText;
 #[derive(Component)]
 struct PlayerDpsText;
 #[derive(Component)]
+struct PlayerPressureText;
+#[derive(Component)]
 struct BankBudgetText;
 
 fn setup_debug_ui_nodes(
@@ -24,6 +27,7 @@ fn setup_debug_ui_nodes(
     enemy_counter: Res<EnemyCounter>,
     spawn_manager: Res<SpawnManager>,
     player_damage: Res<PlayerDamage>,
+    player_pressure: Res<PlayerPressure>,
     diagnostic: Res<DiagnosticsStore>,
     font_assets: Res<FontAssets>,
 ) {
@@ -65,6 +69,19 @@ fn setup_debug_ui_nodes(
             PlayerDpsText,
             UiTextBundle {
                 text: player_dps_text(player_damage.per_second),
+                color: TextColor(Color::WHITE),
+                font: TextFont {
+                    font: font.clone(),
+                    font_size: FontSize::Px(32.),
+                    ..default()
+                },
+                layout: TextLayout::justify(Justify::Center),
+            },
+        ))
+        .with_child((
+            PlayerPressureText,
+            UiTextBundle {
+                text: player_pressure_text(player_pressure.0),
                 color: TextColor(Color::WHITE),
                 font: TextFont {
                     font: font.clone(),
@@ -122,15 +139,26 @@ fn update_player_dps_text(
     *dps_text = player_dps_text(player_damage.per_second);
 }
 
+fn update_player_pressure_text(
+    mut player_pressure_query: Query<&mut Text, With<PlayerPressureText>>,
+    player_pressure: Res<PlayerPressure>,
+) {
+    let Ok(mut pressure_text) = player_pressure_query.single_mut() else {
+        return;
+    };
+
+    *pressure_text = player_pressure_text(player_pressure.0);
+}
+
 fn update_bank_budget_text(
     mut bank_budget_query: Query<&mut Text, With<BankBudgetText>>,
     spawn_manager: Res<SpawnManager>,
 ) {
-    let Ok(mut bank_budget) = bank_budget_query.single_mut() else {
+    let Ok(mut budget_text) = bank_budget_query.single_mut() else {
         return;
     };
 
-    *bank_budget = bank_budget_text(spawn_manager.bank_budget());
+    *budget_text = bank_budget_text(spawn_manager.bank_budget());
 }
 
 fn fps_text(diagnostic: Res<DiagnosticsStore>) -> Text {
@@ -153,6 +181,10 @@ fn player_dps_text(bank_value: f32) -> Text {
     format!("Player DPS {:.2}", bank_value).into()
 }
 
+fn player_pressure_text(pressure: f32) -> Text {
+    format!("Player Pressure {:.2}", pressure).into()
+}
+
 fn bank_budget_text(bank_budget: f32) -> Text {
     format!("Bank Budget {:.2}", bank_budget).into()
 }
@@ -167,6 +199,7 @@ impl Plugin for DebugPlugin {
                     update_fps_text,
                     update_enemy_count_text,
                     update_player_dps_text,
+                    update_player_pressure_text,
                     update_bank_budget_text,
                 )
                     .in_set(InGameSystems),
