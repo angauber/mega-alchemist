@@ -182,8 +182,9 @@ fn spawn_enemy(
     let enemy_position = **chosen_spawner;
 
     info!(
-        "Spawning enemy {:?} | bank value: {} | enemy cost: {}",
+        "Spawning enemy {:?} at {} | bank value: {} enemy cost: {}",
         enemy_to_spawn,
+        enemy_position.translation,
         spawn_manager.bank_value(),
         enemy_to_spawn.cost()
     );

@@ -5,7 +5,6 @@ use crate::attack::ContactAttack;
 use crate::health::Health;
 use bevy::app::App;
 use bevy::image::TextureAtlas;
-use bevy::log::info;
 use bevy::math::Vec3;
 use bevy::prelude::{
     Bundle, Commands, Entity, Event, On, Plugin, Query, Res, Sprite, Timer, TimerMode, Transform,
@@ -67,8 +66,6 @@ pub fn on_spawn_skeleton(
     };
 
     let spawner_position = event.0;
-
-    info!("Spawning skeleton at {:?}", spawner_position);
 
     commands.entity(level_id).with_child(skeleton(
         &monster_assets,

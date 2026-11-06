@@ -28,6 +28,7 @@ pub fn entities_health_system(
         if health.points < 1. {
             if player_query.contains(entity) {
                 commands.trigger(GameOver);
+                return;
             }
 
             commands.entity(entity).despawn();
