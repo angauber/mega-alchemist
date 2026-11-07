@@ -36,6 +36,7 @@ mod game;
 mod health;
 mod level;
 mod loading;
+mod manuscript;
 mod physics;
 mod player;
 mod projectile;

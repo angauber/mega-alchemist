@@ -16,9 +16,9 @@ pub struct DisplayTransmutationOffers {
 
 #[derive(Clone)]
 pub struct TransmutationTextOffer {
-    pub(crate) offer_type: String,
-    pub(crate) entity_name: String,
-    pub(crate) effects: [String; 3],
+    pub offer_type: String,
+    pub entity_name: String,
+    pub effects: [String; 3],
 }
 
 #[derive(Component, Default, Clone)]

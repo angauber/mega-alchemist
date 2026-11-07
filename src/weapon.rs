@@ -16,10 +16,11 @@ pub enum Weapon {
 }
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum WeaponStatistic {
+pub enum Statistic {
     Range,
     Damage,
-    Size,
+    MoveSpeed,
+    ProjectileSize,
     AttackSpeed,
     ProjectileSpeed,
     ProjectileCount,
@@ -76,30 +77,30 @@ pub fn throwable_weapon_build(
     weapon_damage: f32,
     projectile_size: f32,
     projectile_speed: f32,
-) -> HashMap<WeaponStatistic, StatisticData> {
+) -> HashMap<Statistic, StatisticData> {
     vec![
         (
-            WeaponStatistic::ProjectileCount,
+            Statistic::ProjectileCount,
             StatisticData::from_base_value(1.0),
         ),
         (
-            WeaponStatistic::Range,
+            Statistic::Range,
             StatisticData::from_base_value(weapon_range),
         ),
         (
-            WeaponStatistic::AttackSpeed,
+            Statistic::AttackSpeed,
             StatisticData::from_base_value(weapon_cooldown.as_millis() as f32),
         ),
         (
-            WeaponStatistic::Damage,
+            Statistic::Damage,
             StatisticData::from_base_value(weapon_damage),
         ),
         (
-            WeaponStatistic::Size,
+            Statistic::ProjectileSize,
             StatisticData::from_base_value(projectile_size),
         ),
         (
-            WeaponStatistic::ProjectileSpeed,
+            Statistic::ProjectileSpeed,
             StatisticData::from_base_value(projectile_speed),
         ),
     ]
@@ -107,7 +108,7 @@ pub fn throwable_weapon_build(
     .collect()
 }
 
-pub fn knife_build() -> HashMap<WeaponStatistic, StatisticData> {
+pub fn knife_build() -> HashMap<Statistic, StatisticData> {
     throwable_weapon_build(100.0, Duration::from_millis(1600), 10.0, 2.0, 150.0)
 }
 
