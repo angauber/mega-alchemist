@@ -60,6 +60,7 @@ pub struct SpawnManager {
     memory: Option<Enemy>,
     bank_value: f32,
     bank_budget: f32,
+    ref_dps: f32,
     target_pressure_seconds: f32,
     catch_up_time: f32,
 }
@@ -69,6 +70,7 @@ impl Default for SpawnManager {
         SpawnManager {
             weights: SpawnWeights::default(),
             memory: None,
+            ref_dps: 0.0,
             bank_value: 0.0,
             bank_budget: 0.0,
             target_pressure_seconds: 7.0,
@@ -134,16 +136,16 @@ impl SpawnManager {
         }
     }
 
-    pub fn update_bank_budget(&mut self, in_game_time: f32, player_dps: f32, player_pressure: f32) {
+    pub fn update_bank_budget(&mut self, in_game_time: f32, player_pressure: f32) {
         let initial_min_budget = 5.0;
         let time_based_budget = in_game_time * 0.04;
 
-        let min_budget = time_based_budget.max(initial_min_budget);
+        let min_budget = time_based_budget.max(initial_min_budget).max(self.ref_dps / 2.);
         let max_budget = 1_000.;
 
         // e.g. n seconds of player damage
-        let target_pressure = self.target_pressure_seconds * player_dps;
-        let new_budget = player_dps + ((target_pressure - player_pressure) / self.catch_up_time);
+        let target_pressure = self.target_pressure_seconds * self.ref_dps;
+        let new_budget = self.ref_dps + ((target_pressure - player_pressure) / self.catch_up_time);
 
         self.bank_budget = new_budget.clamp(min_budget, max_budget);
     }
@@ -154,11 +156,14 @@ fn update_bank_budget(
     player_damage: Res<PlayerDamage>,
     player_pressure: Res<PlayerPressure>,
     game_clock: Res<GameClock>,
+    time: Res<Time>,
 ) {
     let play_time = game_clock.0.elapsed_secs();
     let player_dps = player_damage.per_second;
 
-    spawn_manager.update_bank_budget(play_time, player_dps, player_pressure.0);
+    spawn_manager.ref_dps = player_dps.max(spawn_manager.ref_dps * (1.0 - 0.02 * time.delta_secs()));
+
+    spawn_manager.update_bank_budget(play_time, player_pressure.0);
 }
 
 fn accumulate_bank_value(mut spawn_manager: ResMut<SpawnManager>, time: Res<Time>) {
