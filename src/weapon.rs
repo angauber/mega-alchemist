@@ -1,9 +1,9 @@
 use crate::agent::Enemy;
-use crate::build::{PlayerBuild, StatisticData, WeaponBuild};
+use crate::build::{PlayerBuild, Statistic, StatisticData};
 use crate::game::InGameSystems;
 use crate::player::Player;
 use crate::projectile::{ProjectilePlugin, ThrowProjectile};
-use crate::weapon::Weapon::Knife;
+use crate::weapon::Weapon::{Bow, Knife};
 use bevy::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -13,32 +13,17 @@ pub struct WeaponPlugin;
 #[derive(Component, Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Weapon {
     Knife,
-}
-
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum Statistic {
-    Range,
-    Damage,
-    MoveSpeed,
-    ProjectileSize,
-    AttackSpeed,
-    ProjectileSpeed,
-    ProjectileCount,
+    Bow,
 }
 
 impl Weapon {
-    pub fn build(&self) -> WeaponBuild {
-        match self {
-            Knife => WeaponBuild {
-                weapon: Knife,
-                stats: knife_build(),
-            },
-        }
+    pub fn all() -> Vec<Weapon> {
+        vec![Knife, Bow]
     }
 }
 
 #[derive(Component)]
-pub struct ThrowableWeapon;
+pub struct ProjectileWeapon;
 
 #[derive(Component)]
 pub struct WeaponCooldown {
@@ -71,7 +56,10 @@ impl Default for TargetReserved {
     }
 }
 
-pub fn throwable_weapon_build(
+#[derive(Event)]
+pub struct SpawnWeapon(pub Weapon);
+
+pub fn projectile_weapon_build(
     weapon_range: f32,
     weapon_cooldown: Duration,
     weapon_damage: f32,
@@ -108,16 +96,54 @@ pub fn throwable_weapon_build(
     .collect()
 }
 
+// high attack speed, low range and damage
 pub fn knife_build() -> HashMap<Statistic, StatisticData> {
-    throwable_weapon_build(100.0, Duration::from_millis(1600), 10.0, 2.0, 150.0)
+    projectile_weapon_build(100.0, Duration::from_millis(1500), 10.0, 2.0, 150.0)
 }
 
-pub fn throwable_weapon() -> impl Bundle {
-    (ThrowableWeapon, WeaponProjectileCounter { count: 0 })
+// High range and damage low attack speed
+pub fn bow_build() -> HashMap<Statistic, StatisticData> {
+    projectile_weapon_build(170.0, Duration::from_millis(1900), 15.0, 2.0, 200.0)
+}
+
+pub fn projectile_weapon() -> impl Bundle {
+    (ProjectileWeapon, WeaponProjectileCounter { count: 0 })
 }
 
 fn knife() -> impl Bundle {
-    (throwable_weapon(), Knife)
+    (projectile_weapon(), Knife)
+}
+
+fn bow() -> impl Bundle {
+    (projectile_weapon(), Bow)
+}
+
+fn on_spawn_weapon(
+    event: On<SpawnWeapon>,
+    player_query: Query<Entity, With<Player>>,
+    mut player_build: ResMut<PlayerBuild>,
+    mut commands: Commands,
+) {
+    let new_weapon = event.0;
+
+    let Ok(player_entity) = player_query.single() else {
+        return;
+    };
+
+    player_build.add_weapon(new_weapon);
+
+    commands
+        .entity(player_entity)
+        .with_children(|parent| match new_weapon {
+            Knife => {
+                parent.spawn(knife());
+            }
+            Bow => {
+                parent.spawn(bow());
+            }
+        });
+
+    info!("new weapon spawned {:?}", new_weapon);
 }
 
 fn weapon_cooldown_system(
@@ -153,7 +179,7 @@ fn clear_reserved_targets(
 fn throw_projectiles(
     mut commands: Commands,
     player_position: Query<&Transform, With<Player>>,
-    weapon_query: Query<(Entity, &Weapon), (With<ThrowableWeapon>, Without<WeaponCooldown>)>,
+    weapon_query: Query<(Entity, &Weapon), (With<ProjectileWeapon>, Without<WeaponCooldown>)>,
     mut projectile_counter_query: Query<&mut WeaponProjectileCounter, With<Weapon>>,
     enemies_query: Query<(Entity, &Transform), (With<Enemy>, Without<TargetReserved>)>,
     player_build: Res<PlayerBuild>,
@@ -213,9 +239,10 @@ fn throw_projectiles(
 
         'enemy: for (enemy, enemy_transform) in in_range_enemies {
             commands.trigger(ThrowProjectile {
-                weapon: weapon_entity,
-                target: enemy,
+                weapon_entity,
+                target_entity: enemy,
                 target_transform: *enemy_transform,
+                weapon: *weapon,
                 range,
                 speed,
                 size,
@@ -239,22 +266,18 @@ fn throw_projectiles(
     }
 }
 
-fn spawn_player_default_weapon(
-    mut commands: Commands,
-    player_query: Query<Entity, Added<Player>>,
-    mut player_build: ResMut<PlayerBuild>,
-) {
-    let Ok(player_entity) = player_query.single() else {
+fn spawn_player_default_weapon(mut commands: Commands, player_query: Query<Entity, Added<Player>>) {
+    if player_query.single().is_err() {
         return;
     };
 
-    player_build.add_weapon(Knife);
-    commands.entity(player_entity).with_child(knife());
+    commands.trigger(SpawnWeapon(Knife));
 }
 
 impl Plugin for WeaponPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ProjectilePlugin)
+            .add_observer(on_spawn_weapon)
             .add_systems(PreUpdate, weapon_cooldown_system.in_set(InGameSystems))
             .add_systems(
                 Update,

@@ -4,6 +4,8 @@ use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
 use crate::physics::started_collision_pairs;
 use crate::player::Player;
+use crate::weapon::Weapon;
+use crate::weapon::Weapon::{Bow, Knife};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -12,6 +14,7 @@ use bevy_rapier2d::rapier::prelude::CollisionEventFlags;
 pub struct ProjectilePlugin;
 
 const KNIFE_SPRITE_INDEX: usize = 0;
+const ARROW_SPRITE_INDEX: usize = 253;
 
 #[derive(Component)]
 pub struct Projectile;
@@ -32,16 +35,23 @@ pub struct TargetTracking {
     target: Entity,
 }
 
-fn knife(item_assets: &ItemAssets, target: Entity) -> impl Bundle {
-    (
-        Sprite::from_atlas_image(
-            item_assets.sprite.clone(),
-            TextureAtlas {
-                layout: item_assets.texture_atlas_layout.clone(),
-                index: KNIFE_SPRITE_INDEX,
-            },
-        ),
-        TargetTracking { target },
+fn knife_projectile_sprite(item_assets: &ItemAssets) -> impl Bundle {
+    Sprite::from_atlas_image(
+        item_assets.sprite.clone(),
+        TextureAtlas {
+            layout: item_assets.texture_atlas_layout.clone(),
+            index: KNIFE_SPRITE_INDEX,
+        },
+    )
+}
+
+fn arrow_projectile_sprite(item_assets: &ItemAssets) -> impl Bundle {
+    Sprite::from_atlas_image(
+        item_assets.sprite.clone(),
+        TextureAtlas {
+            layout: item_assets.texture_atlas_layout.clone(),
+            index: ARROW_SPRITE_INDEX,
+        },
     )
 }
 
@@ -68,11 +78,42 @@ pub fn projectile(
     )
 }
 
+fn throwing_knife_bundle(
+    item_assets: &ItemAssets,
+    transform: Transform,
+    velocity: Velocity,
+    collider: Collider,
+    range: f32,
+    damage: f32,
+    target: Entity,
+) -> impl Bundle {
+    (
+        projectile(transform, velocity, collider, range, damage),
+        TargetTracking { target },
+        knife_projectile_sprite(item_assets),
+    )
+}
+
+fn arrow_bundle(
+    item_assets: &ItemAssets,
+    transform: Transform,
+    velocity: Velocity,
+    collider: Collider,
+    range: f32,
+    damage: f32,
+) -> impl Bundle {
+    (
+        projectile(transform, velocity, collider, range, damage),
+        arrow_projectile_sprite(item_assets),
+    )
+}
+
 #[derive(Event)]
 pub struct ThrowProjectile {
-    pub weapon: Entity,
-    pub target: Entity,
+    pub weapon_entity: Entity,
+    pub target_entity: Entity,
     pub target_transform: Transform,
+    pub weapon: Weapon,
     pub range: f32,
     pub speed: f32,
     pub size: f32,
@@ -88,7 +129,7 @@ fn on_throw_projectile(
 ) {
     info!(
         "Projectile throw triggered by weapon {} for enemy {}",
-        event.weapon, event.target
+        event.weapon_entity, event.target_entity
     );
 
     let Ok(level_id) = level_query.single() else {
@@ -120,16 +161,35 @@ fn on_throw_projectile(
 
     let projectile_collider = Collider::ball(projectile_size);
 
-    commands.entity(level_id).with_child((
-        projectile(
+    let mut entity_command = commands.entity(level_id);
+
+    if event.weapon == Knife {
+        entity_command.with_child(throwing_knife_bundle(
+            &items_assets,
             projectile_transform,
             projectile_velocity,
             projectile_collider,
             projectile_range,
             projectile_damage,
-        ),
-        knife(&items_assets, event.target),
-    ));
+            event.target_entity,
+        ));
+
+        return;
+    }
+
+    if event.weapon == Bow {
+        entity_command.with_child(arrow_bundle(
+            &items_assets,
+            projectile_transform,
+            projectile_velocity,
+            projectile_collider,
+            projectile_range,
+            projectile_damage,
+        ));
+        return;
+    }
+
+    warn!("No sprite known for projectile weapon {:?}", event.weapon);
 }
 
 fn despawn_projectile_on_range_exceeded(

@@ -1,12 +1,12 @@
+use crate::build::Statistic;
 use crate::transmutation::{Transmutation, TransmutationEffect};
-use crate::weapon::Statistic;
 use bevy::prelude::*;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Manuscript {
     Strength,
-    Tempo,
-    Chaos,
+    Dexterity,
+    Quantity,
     Agility,
 }
 
@@ -14,8 +14,8 @@ impl Manuscript {
     pub fn all() -> Vec<Manuscript> {
         vec![
             Manuscript::Strength,
-            Manuscript::Tempo,
-            Manuscript::Chaos,
+            Manuscript::Dexterity,
+            Manuscript::Quantity,
             Manuscript::Agility,
         ]
     }
@@ -23,8 +23,8 @@ impl Manuscript {
     pub fn statistic(&self) -> Statistic {
         match self {
             Manuscript::Strength => Statistic::Damage,
-            Manuscript::Tempo => Statistic::AttackSpeed,
-            Manuscript::Chaos => Statistic::ProjectileCount,
+            Manuscript::Dexterity => Statistic::AttackSpeed,
+            Manuscript::Quantity => Statistic::ProjectileCount,
             Manuscript::Agility => Statistic::MoveSpeed,
         }
     }
@@ -32,7 +32,7 @@ impl Manuscript {
     #[allow(dead_code)]
     pub fn effect(&self) -> TransmutationEffect {
         match self {
-            Manuscript::Chaos => TransmutationEffect::Add(1),
+            Manuscript::Quantity => TransmutationEffect::Add(1),
             Manuscript::Agility => TransmutationEffect::Multiply(0.05),
             _ => TransmutationEffect::Multiply(0.1),
         }

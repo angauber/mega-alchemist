@@ -1,8 +1,8 @@
 use crate::manuscript::Manuscript;
 use crate::transmutation::TransmutationEffect::{Add, Multiply};
 use crate::transmutation::{Transmutation, TransmutationEffect, WeaponTransmutationOffer};
-use crate::weapon::Statistic;
-use crate::weapon::Weapon;
+use crate::weapon::Weapon::{Bow, Knife};
+use crate::weapon::{Weapon, bow_build, knife_build};
 use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
@@ -56,6 +56,18 @@ impl StatisticData {
 pub struct WeaponBuild {
     pub weapon: Weapon,
     pub stats: HashMap<Statistic, StatisticData>,
+}
+
+impl From<Weapon> for WeaponBuild {
+    fn from(value: Weapon) -> Self {
+        WeaponBuild {
+            weapon: value,
+            stats: match value {
+                Knife => knife_build(),
+                Bow => bow_build(),
+            },
+        }
+    }
 }
 
 impl WeaponBuild {
@@ -121,7 +133,7 @@ impl PlayerBuild {
     }
 
     pub fn add_weapon(&mut self, weapon: Weapon) {
-        self.weapon_builds.insert(weapon, weapon.build());
+        self.weapon_builds.insert(weapon, weapon.into());
     }
 
     pub fn apply_manuscript(&mut self, manuscript: &Manuscript) {
@@ -134,7 +146,7 @@ impl PlayerBuild {
             Statistic::Damage => self.damage += 0.1,
             Statistic::ProjectileSize => self.projectile_size += 0.1,
             Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
-            Statistic::MoveSpeed => self.move_speed += 0.1,
+            Statistic::MoveSpeed => self.move_speed += 0.05,
         };
     }
 
@@ -206,8 +218,19 @@ impl PlayerBuild {
         Ok(self.projectile_count + weapon_projectile_count)
     }
 
-    pub fn empty_manuscripts_slots(&self) -> usize {
+    pub fn empty_weapon_slots(&self) -> usize {
+        MAX_MANUSCRIPTS - self.weapon_builds.len()
+    }
+
+    pub fn empty_manuscript_slots(&self) -> usize {
         MAX_MANUSCRIPTS - self.manuscripts.len()
+    }
+
+    pub fn available_weapons(&self) -> HashSet<Weapon> {
+        Weapon::all()
+            .into_iter()
+            .filter(|m| !self.weapon_builds.contains_key(m))
+            .collect()
     }
 
     pub fn available_manuscripts(&self) -> HashSet<Manuscript> {
@@ -256,4 +279,15 @@ impl Plugin for BuildPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerBuild>();
     }
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum Statistic {
+    Range,
+    Damage,
+    MoveSpeed,
+    ProjectileSize,
+    AttackSpeed,
+    ProjectileSpeed,
+    ProjectileCount,
 }

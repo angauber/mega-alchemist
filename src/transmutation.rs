@@ -1,11 +1,9 @@
-use crate::build::PlayerBuild;
+use crate::build::{PlayerBuild, Statistic};
 use crate::manuscript::Manuscript;
 use crate::transmutation::TransmutationEffect::{Add, Multiply};
-use crate::transmutation::TransmutationOffer::{
-    ManuscriptTransmutation, NewManuscript, NewWeapon, WeaponTransmutation,
-};
+use crate::transmutation::TransmutationOffer::*;
 use crate::ui::transmutation::{DisplayTransmutationOffers, TransmutationTextOffer};
-use crate::weapon::{Statistic, Weapon};
+use crate::weapon::{SpawnWeapon, Weapon};
 use bevy::prelude::*;
 use log::warn;
 use rand::distr::weighted::WeightedIndex;
@@ -25,7 +23,7 @@ pub struct ApplyTransmutationOffer(pub usize);
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum TransmutationOfferType {
-    // NewWeapon,
+    NewWeapon,
     NewManuscript,
     WeaponTransmutation,
     ManuscriptTransmutation,
@@ -33,7 +31,6 @@ pub enum TransmutationOfferType {
 
 #[derive(Clone, Debug)]
 pub enum TransmutationOffer {
-    #[allow(dead_code)]
     NewWeapon(Weapon),
     NewManuscript(Manuscript),
     WeaponTransmutation(WeaponTransmutationOffer),
@@ -79,7 +76,6 @@ impl TransmutationOffers {
 struct TransmutationOfferPool {
     offer_types_pool: Vec<TransmutationOfferType>,
     new_manuscripts_pool: HashSet<Manuscript>,
-    #[allow(dead_code)]
     new_weapons_pool: HashSet<Weapon>,
     weapon_stats_pool: HashMap<Weapon, HashSet<Statistic>>,
     manuscripts_pool: HashSet<Manuscript>,
@@ -88,6 +84,7 @@ struct TransmutationOfferPool {
 
 impl TransmutationOfferPool {
     pub fn fill_pool(&mut self, build: &PlayerBuild) {
+        self.fill_new_weapons(build);
         self.fill_new_manuscripts(build);
         self.fill_weapon_stats(build);
         self.fill_manuscripts(build);
@@ -113,6 +110,7 @@ impl TransmutationOfferPool {
 
     pub fn draw_offer(&mut self, offer_type: TransmutationOfferType) -> TransmutationOffer {
         match offer_type {
+            TransmutationOfferType::NewWeapon => NewWeapon(self.draw_new_weapon()),
             TransmutationOfferType::NewManuscript => NewManuscript(self.draw_new_manuscript()),
             TransmutationOfferType::ManuscriptTransmutation => {
                 ManuscriptTransmutation(self.draw_manuscript_transmutation())
@@ -144,6 +142,14 @@ impl TransmutationOfferPool {
         let offers: Vec<TransmutationOfferType> = sampled_weights.copied().collect();
 
         [offers[0], offers[1], offers[2]]
+    }
+
+    fn draw_new_weapon(&mut self) -> Weapon {
+        let new_weapon = self.random_new_weapon();
+
+        self.remove_new_weapon(&new_weapon);
+
+        new_weapon
     }
 
     fn draw_new_manuscript(&mut self) -> Manuscript {
@@ -200,8 +206,13 @@ impl TransmutationOfferPool {
     // ManuscriptTransmutation should be present 3 times with w = 1
     // WeaponTransmutation should be present 3 times with w = 1
     fn fill_offer_types(&mut self, build: &PlayerBuild) {
+        // NewWeapon offers depend on available weapons
+        for _n in 0..build.empty_weapon_slots() {
+            self.offer_types_pool
+                .push(TransmutationOfferType::NewWeapon);
+        }
         // NewManuscript offers depend on available slots
-        for _n in 0..build.empty_manuscripts_slots() {
+        for _n in 0..build.empty_manuscript_slots() {
             self.offer_types_pool
                 .push(TransmutationOfferType::NewManuscript);
         }
@@ -219,6 +230,10 @@ impl TransmutationOfferPool {
         }
     }
 
+    fn fill_new_weapons(&mut self, player_build: &PlayerBuild) {
+        self.new_weapons_pool = player_build.available_weapons();
+    }
+
     fn fill_new_manuscripts(&mut self, player_build: &PlayerBuild) {
         self.new_manuscripts_pool = player_build.available_manuscripts();
     }
@@ -234,6 +249,14 @@ impl TransmutationOfferPool {
 
     fn fill_manuscripts(&mut self, player_build: &PlayerBuild) {
         self.manuscripts_pool = player_build.manuscripts().into_iter().collect();
+    }
+
+    fn random_new_weapon(&self) -> Weapon {
+        self.new_weapons_pool
+            .iter()
+            .cloned()
+            .choose(&mut rand::rng())
+            .expect("No new weapons left in the pool")
     }
 
     fn random_new_manuscript(&self) -> Manuscript {
@@ -284,6 +307,10 @@ impl TransmutationOfferPool {
         let stat_count_index = weighted_index.sample(&mut rng);
 
         stat_options[stat_count_index]
+    }
+
+    fn remove_new_weapon(&mut self, weapon: &Weapon) {
+        self.new_weapons_pool.remove(weapon);
     }
 
     fn remove_new_manuscript(&mut self, manuscript: &Manuscript) {
@@ -356,7 +383,7 @@ impl TransmutationOfferPool {
     fn offer_type_weight(offer_type: &TransmutationOfferType) -> f64 {
         match offer_type {
             TransmutationOfferType::NewManuscript => 2.,
-            // TransmutationOfferType::NewWeapon => 2.,
+            TransmutationOfferType::NewWeapon => 2.,
             TransmutationOfferType::WeaponTransmutation => 1.,
             TransmutationOfferType::ManuscriptTransmutation => 1.,
         }
@@ -517,14 +544,14 @@ fn apply_transmutation_offer(
     event: On<ApplyTransmutationOffer>,
     offers: Res<TransmutationOffers>,
     mut player_build: ResMut<PlayerBuild>,
+    mut commands: Commands,
 ) {
     let offer = offers.get(event.0);
 
     match offer {
         NewWeapon(weapon) => {
-            // todo trigger event to spawn new weapon entity
             info!("Adding weapon {:?}", weapon);
-            player_build.add_weapon(weapon);
+            commands.trigger(SpawnWeapon(weapon));
         }
         NewManuscript(manuscript) => {
             info!("Adding manuscript {:?}", manuscript);
