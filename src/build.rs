@@ -17,6 +17,17 @@ fn global_multiplier(a: f32, b: f32) -> f32 {
     1. + (a - 1.) + (b - 1.)
 }
 
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum Statistic {
+    Range,
+    Damage,
+    MoveSpeed,
+    ProjectileSize,
+    AttackSpeed,
+    ProjectileSpeed,
+    ProjectileCount,
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct StatisticData {
     base_value: f32,
@@ -141,8 +152,8 @@ impl PlayerBuild {
 
         match manuscript.statistic() {
             Statistic::ProjectileCount => self.projectile_count += 1,
-            Statistic::AttackSpeed => self.attack_speed += 0.1,
-            Statistic::Range => self.range += 0.1,
+            Statistic::AttackSpeed => self.attack_speed += 0.09,
+            Statistic::Range => self.range += 0.08,
             Statistic::Damage => self.damage += 0.1,
             Statistic::ProjectileSize => self.projectile_size += 0.1,
             Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
@@ -279,15 +290,4 @@ impl Plugin for BuildPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerBuild>();
     }
-}
-
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum Statistic {
-    Range,
-    Damage,
-    MoveSpeed,
-    ProjectileSize,
-    AttackSpeed,
-    ProjectileSpeed,
-    ProjectileCount,
 }

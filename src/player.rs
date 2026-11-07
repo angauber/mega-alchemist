@@ -11,9 +11,9 @@ use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
-const SPEED: f32 = 100.0;
-const ACCELERATION: f32 = 500.0;
-const DECELERATION: f32 = 1000.0;
+const BASE_SPEED: f32 = 80.0;
+const ACCELERATION: f32 = 400.0;
+const DECELERATION: f32 = 700.0;
 
 #[derive(Component, Default)]
 pub struct Player;
@@ -95,7 +95,7 @@ fn player_movement(
 
     let dir = dir.normalize_or_zero();
 
-    let target = dir * SPEED * player_build.move_speed;
+    let target = dir * BASE_SPEED * player_build.move_speed;
     let rate = if dir == Vec2::ZERO {
         DECELERATION * player_build.move_speed
     } else {

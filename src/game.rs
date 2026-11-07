@@ -1,5 +1,6 @@
 use crate::agent::Enemy;
 use crate::ui::text::RenderUiText;
+#[cfg(feature = "dev_tools")]
 use bevy::prelude::KeyCode::Space;
 use bevy::prelude::*;
 use bevy::time::Stopwatch;
@@ -102,6 +103,7 @@ fn tick_game_clock(mut game_clock: ResMut<GameClock>, time: Res<Time>) {
     game_clock.0.tick(time.delta());
 }
 
+#[cfg(feature = "dev_tools")]
 fn toggle_game_state_on_space(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     current_state: Res<State<GameState>>,
@@ -131,7 +133,9 @@ impl Plugin for GamePlugin {
             .add_observer(on_game_over_with_delay)
             .add_systems(PreUpdate, trigger_game_over_with_delay)
             .add_systems(PreUpdate, tick_game_clock.in_set(InGameSystems))
-            .add_systems(Update, toggle_game_state_on_space)
             .add_systems(Update, count_enemies.in_set(InGameSystems));
+
+        #[cfg(feature = "dev_tools")]
+        app.add_systems(Update, toggle_game_state_on_space);
     }
 }
