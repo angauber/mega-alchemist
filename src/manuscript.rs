@@ -30,4 +30,14 @@ impl Manuscript {
             Manuscript::Vision => Statistic::Range,
         }
     }
+
+    pub fn sprite_index(&self) -> usize {
+        match self {
+            Manuscript::Strength => 231,
+            Manuscript::Dexterity => 232,
+            Manuscript::Quantity => 234,
+            Manuscript::Agility => 235,
+            Manuscript::Vision => 233,
+        }
+    }
 }

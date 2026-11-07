@@ -10,6 +10,8 @@ use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use std::time::Duration;
 
+const SPAWN_KILL_RADIUS: f32 = 150.;
+
 pub struct SpawnManagerPlugin;
 
 #[derive(Copy, Clone, Debug)]
@@ -140,7 +142,9 @@ impl SpawnManager {
         let initial_min_budget = 5.0;
         let time_based_budget = in_game_time * 0.04;
 
-        let min_budget = time_based_budget.max(initial_min_budget).max(self.ref_dps / 2.);
+        let min_budget = time_based_budget
+            .max(initial_min_budget)
+            .max(self.ref_dps / 2.);
         let max_budget = 1_000.;
 
         // e.g. n seconds of player damage
@@ -161,7 +165,8 @@ fn update_bank_budget(
     let play_time = game_clock.0.elapsed_secs();
     let player_dps = player_damage.per_second;
 
-    spawn_manager.ref_dps = player_dps.max(spawn_manager.ref_dps * (1.0 - 0.02 * time.delta_secs()));
+    spawn_manager.ref_dps =
+        player_dps.max(spawn_manager.ref_dps * (1.0 - 0.02 * time.delta_secs()));
 
     spawn_manager.update_bank_budget(play_time, player_pressure.0);
 }
@@ -198,7 +203,7 @@ fn spawn_enemy(
     let spawner_pool = spawners_query
         .iter()
         .filter(|spawner_position| {
-            spawner_position.translation.xy().distance(player_position) >= 300.
+            spawner_position.translation.xy().distance(player_position) >= SPAWN_KILL_RADIUS
         })
         .collect::<Vec<_>>();
 

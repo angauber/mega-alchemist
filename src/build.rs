@@ -65,14 +65,14 @@ impl StatisticData {
 
 #[derive(Clone, Debug)]
 pub struct WeaponBuild {
-    pub weapon: Weapon,
-    pub stats: HashMap<Statistic, StatisticData>,
+    level: usize,
+    stats: HashMap<Statistic, StatisticData>,
 }
 
 impl From<Weapon> for WeaponBuild {
     fn from(value: Weapon) -> Self {
         WeaponBuild {
-            weapon: value,
+            level: 0,
             stats: match value {
                 Knife => knife_build(),
                 Bow => bow_build(),
@@ -110,7 +110,7 @@ fn format_percentage(multiplier: f32) -> String {
 #[derive(Resource, Clone, Debug)]
 pub struct PlayerBuild {
     weapon_builds: HashMap<Weapon, WeaponBuild>,
-    manuscripts: HashSet<Manuscript>,
+    manuscripts: HashMap<Manuscript, usize>,
     pub max_health: f32,
     pub move_speed: f32,
     pub damage: f32,
@@ -131,7 +131,7 @@ impl PlayerBuild {
     pub fn new() -> PlayerBuild {
         PlayerBuild {
             weapon_builds: HashMap::new(),
-            manuscripts: HashSet::new(),
+            manuscripts: HashMap::new(),
             max_health: 100.0,
             move_speed: 1.0,
             damage: 1.0,
@@ -147,18 +147,10 @@ impl PlayerBuild {
         self.weapon_builds.insert(weapon, weapon.into());
     }
 
-    pub fn apply_manuscript(&mut self, manuscript: &Manuscript) {
-        self.manuscripts.insert(*manuscript);
+    pub fn add_manuscript(&mut self, manuscript: &Manuscript) {
+        self.manuscripts.insert(*manuscript, 1);
 
-        match manuscript.statistic() {
-            Statistic::ProjectileCount => self.projectile_count += 1,
-            Statistic::AttackSpeed => self.attack_speed += 0.09,
-            Statistic::Range => self.range += 0.08,
-            Statistic::Damage => self.damage += 0.1,
-            Statistic::ProjectileSize => self.projectile_size += 0.1,
-            Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
-            Statistic::MoveSpeed => self.move_speed += 0.05,
-        };
+        self.apply_manuscript_to_build(manuscript);
     }
 
     pub fn apply_weapon_transmutation(&mut self, offer: &WeaponTransmutationOffer) {
@@ -166,6 +158,8 @@ impl PlayerBuild {
             .weapon_builds
             .get_mut(&offer.weapon)
             .expect("weapon not found");
+
+        build.level += 1;
 
         for transmutation_option in &offer.transmutations {
             let Some(transmutation) = transmutation_option else {
@@ -176,8 +170,15 @@ impl PlayerBuild {
         }
     }
 
-    pub fn weapon_builds(&self) -> Vec<&WeaponBuild> {
-        self.weapon_builds.values().collect()
+    pub fn apply_manuscript_transmutation(&mut self, manuscript: &Manuscript) {
+        self.manuscripts
+            .insert(*manuscript, self.manuscripts[manuscript] + 1);
+
+        self.apply_manuscript_to_build(manuscript);
+    }
+
+    pub fn weapon_builds(&self) -> Vec<(&Weapon, &WeaponBuild)> {
+        self.weapon_builds.iter().collect()
     }
 
     pub fn weapon_build(&self, weapon: &Weapon) -> Result<&WeaponBuild, &str> {
@@ -247,30 +248,38 @@ impl PlayerBuild {
     pub fn available_manuscripts(&self) -> HashSet<Manuscript> {
         Manuscript::all()
             .into_iter()
-            .filter(|m| !self.manuscripts.contains(m))
+            .filter(|m| !self.manuscripts.contains_key(m))
             .collect()
     }
 
     pub fn manuscripts(&self) -> HashSet<Manuscript> {
-        self.manuscripts.clone()
+        self.manuscripts.keys().cloned().collect()
     }
 
     pub fn weapon_stat_text(&self, weapon: &Weapon, statistic: &Statistic) -> Result<String, &str> {
         let value = match statistic {
             Statistic::Range => format!("{:.2}", self.weapon_range(weapon)?),
-            Statistic::Damage => format!("{:.2}", self.weapon_damage(weapon)?),
-            Statistic::ProjectileSize => format!("{:.2}", self.weapon_projectile_size(weapon)?),
+            Statistic::Damage => format!("{:.1}", self.weapon_damage(weapon)?),
+            Statistic::ProjectileSize => format!("{:.1}", self.weapon_projectile_size(weapon)?),
             Statistic::AttackSpeed => {
-                format!("{:.2} s", self.weapon_cooldown(weapon)?.as_secs_f32())
+                format!("{:.1} s", self.weapon_cooldown(weapon)?.as_secs_f32())
             }
             Statistic::ProjectileSpeed => {
-                format!("{:.2}", self.weapon_projectile_speed(weapon)?)
+                format!("{:.1}", self.weapon_projectile_speed(weapon)?)
             }
             Statistic::ProjectileCount => self.weapon_projectile_count(weapon)?.to_string(),
             Statistic::MoveSpeed => "".to_string(),
         };
 
         Ok(value)
+    }
+
+    pub fn weapon_level(&self, weapon: &Weapon) -> usize {
+        self.weapon_builds[weapon].level
+    }
+
+    pub fn manuscript_level(&self, manuscript: &Manuscript) -> usize {
+        self.manuscripts[manuscript]
     }
 
     pub fn manuscript_stat_text(&self, manuscript: &Manuscript) -> String {
@@ -283,6 +292,18 @@ impl PlayerBuild {
             Statistic::MoveSpeed => format_percentage(self.move_speed),
             Statistic::ProjectileCount => (1 + self.projectile_count).to_string(),
         }
+    }
+
+    fn apply_manuscript_to_build(&mut self, manuscript: &Manuscript) {
+        match manuscript.statistic() {
+            Statistic::ProjectileCount => self.projectile_count += 1,
+            Statistic::AttackSpeed => self.attack_speed += 0.09,
+            Statistic::Range => self.range += 0.08,
+            Statistic::Damage => self.damage += 0.1,
+            Statistic::ProjectileSize => self.projectile_size += 0.1,
+            Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
+            Statistic::MoveSpeed => self.move_speed += 0.05,
+        };
     }
 }
 

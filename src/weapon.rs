@@ -8,6 +8,9 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
 
+pub const KNIFE_SPRITE_INDEX: usize = 0;
+pub const BOW_SPRITE_INDEX: usize = 101;
+
 pub struct WeaponPlugin;
 
 #[derive(Component, Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -19,6 +22,13 @@ pub enum Weapon {
 impl Weapon {
     pub fn all() -> Vec<Weapon> {
         vec![Knife, Bow]
+    }
+
+    pub fn sprite_index(&self) -> usize {
+        match self {
+            Knife => KNIFE_SPRITE_INDEX,
+            Bow => BOW_SPRITE_INDEX,
+        }
     }
 }
 

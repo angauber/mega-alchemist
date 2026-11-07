@@ -4,8 +4,8 @@ use crate::damage::ApplyDamage;
 use crate::game::InGameSystems;
 use crate::physics::started_collision_pairs;
 use crate::player::Player;
-use crate::weapon::Weapon;
 use crate::weapon::Weapon::{Bow, Knife};
+use crate::weapon::{KNIFE_SPRITE_INDEX, Weapon};
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -13,8 +13,7 @@ use bevy_rapier2d::rapier::prelude::CollisionEventFlags;
 
 pub struct ProjectilePlugin;
 
-const KNIFE_SPRITE_INDEX: usize = 0;
-const ARROW_SPRITE_INDEX: usize = 253;
+pub const ARROW_SPRITE_INDEX: usize = 253;
 
 #[derive(Component)]
 pub struct Projectile;

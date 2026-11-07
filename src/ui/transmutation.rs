@@ -1,6 +1,9 @@
+use crate::assets::ItemAssets;
 use crate::game::GameState;
 use crate::transmutation::ApplyTransmutationOffer;
 use crate::ui::game::{BROWN, DARK_GRAY};
+use bevy::ecs::template::OptionTemplate;
+use bevy::image::TextureAtlasTemplate;
 use bevy::prelude::*;
 use bevy::text::FontSourceTemplate;
 use bevy::ui_widgets::Button;
@@ -17,6 +20,7 @@ pub struct DisplayTransmutationOffers {
 #[derive(Clone)]
 pub struct TransmutationTextOffer {
     pub offer_type: String,
+    pub item_sprite_index: usize,
     pub entity_name: String,
     pub effects: [String; 3],
 }
@@ -27,8 +31,13 @@ pub struct TransmutationOffersRootNode;
 #[derive(Component, Default, Clone)]
 struct OfferIdentifier(usize);
 
-fn render_transmutation_ui(event: On<DisplayTransmutationOffers>, mut commands: Commands) {
+fn render_transmutation_ui(
+    event: On<DisplayTransmutationOffers>,
+    mut commands: Commands,
+    item_assets: Res<ItemAssets>,
+) {
     commands.spawn_scene(transmutation_ui(
+        &item_assets,
         event.offer_a.clone(),
         event.offer_b.clone(),
         event.offer_c.clone(),
@@ -62,6 +71,7 @@ fn pick_offer(
 }
 
 fn transmutation_ui(
+    item_assets: &ItemAssets,
     a: TransmutationTextOffer,
     b: TransmutationTextOffer,
     c: TransmutationTextOffer,
@@ -78,7 +88,7 @@ fn transmutation_ui(
         Children [
             Node {
                 flex_direction: FlexDirection::Column,
-                max_width: px(700.),
+                max_width: px(800.),
                 max_height: percent(80),
                 min_width: px(700),
                 min_height: px(400),
@@ -101,18 +111,22 @@ fn transmutation_ui(
                     }
                 ]
                 --
-                @transmutation_offer_ui(a, 0)
+                @transmutation_offer_ui(item_assets, a, 0)
                 --
-                @transmutation_offer_ui(b, 1)
+                @transmutation_offer_ui(item_assets, b, 1)
                 --
-                @transmutation_offer_ui(c, 2)
+                @transmutation_offer_ui(item_assets, c, 2)
             ]
         ]
     }
 }
 
-fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize) -> impl Scene {
-    let offer_type = offer.offer_type;
+fn transmutation_offer_ui(
+    item_assets: &ItemAssets,
+    offer: TransmutationTextOffer,
+    offer_identifier: usize,
+) -> impl Scene {
+    let _offer_type = offer.offer_type;
     let entity_name = offer.entity_name;
     let effects = offer.effects;
 
@@ -120,11 +134,17 @@ fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize
     let text_b = effects[1].clone();
     let text_c = effects[2].clone();
 
+    let items_sprite = item_assets.sprite.clone();
+    let texture_atlas = OptionTemplate::Some(TextureAtlasTemplate {
+        layout: item_assets.texture_atlas_layout.clone().into(),
+        index: offer.item_sprite_index,
+    });
+
     bsn! {
         Button
         on(pick_offer)
         Node {
-            width: px(600),
+            min_width: px(600),
             min_height: px(100),
             justify_content: JustifyContent::SpaceEvenly,
             align_items: AlignItems::Center,
@@ -134,23 +154,30 @@ fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize
         BackgroundColor(DARK_GRAY)
         OfferIdentifier(offer_identifier)
         Children [
-            Node {}
+            Node {
+                width: px(150)
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+            }
             Children [
-                Node {
-                    width: px(100),
+
+                ImageNode {
+                    image: items_sprite,
+                    texture_atlas: texture_atlas,
                 }
-                Text(offer_type)
-                TextFont {
-                    font: FontSourceTemplate::Handle("fonts/Pixuf.ttf"),
-                    font_size: px(16.0),
+                Node {
+                    width: px(128.),
+                    height: px(128.),
                 }
             ]
             --
-            Node {}
+            Node {
+                width: px(150),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+            }
             Children [
-                Node {
-                    width: px(100),
-                }
+                // BackgroundColor(PURPLE)
                 Text(entity_name)
                 TextFont {
                     font: FontSourceTemplate::Handle("fonts/Pixuf.ttf"),
@@ -159,11 +186,12 @@ fn transmutation_offer_ui(offer: TransmutationTextOffer, offer_identifier: usize
             ]
             --
             Node {
-                width: percent(50),
+                width: percent(45),
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Start,
                 justify_content: JustifyContent::SpaceEvenly,
             }
+            // BackgroundColor(PURPLE)
             Children [
                 @transmutation_effect_text(text_a)
                 --

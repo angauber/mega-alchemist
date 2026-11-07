@@ -239,11 +239,9 @@ impl TransmutationOfferPool {
     }
 
     fn fill_weapon_stats(&mut self, player_build: &PlayerBuild) {
-        for weapon_build in player_build.weapon_builds() {
-            self.weapon_stats_pool.insert(
-                weapon_build.weapon,
-                weapon_build.statistics().into_iter().collect(),
-            );
+        for (weapon, build) in player_build.weapon_builds() {
+            self.weapon_stats_pool
+                .insert(*weapon, build.statistics().into_iter().collect());
         }
     }
 
@@ -418,6 +416,7 @@ fn weapon_transmutation_to_text(
 fn new_weapon_to_text(weapon: &Weapon) -> TransmutationTextOffer {
     TransmutationTextOffer {
         offer_type: "New Weapon".to_string(),
+        item_sprite_index: weapon.sprite_index(),
         entity_name: format!("{:?}", weapon),
         effects: [
             format!("Unlock {:?} Weapon", weapon),
@@ -430,6 +429,7 @@ fn new_weapon_to_text(weapon: &Weapon) -> TransmutationTextOffer {
 fn new_manuscript_to_text(manuscript: &Manuscript) -> TransmutationTextOffer {
     TransmutationTextOffer {
         offer_type: "New Manuscript".to_string(),
+        item_sprite_index: manuscript.sprite_index(),
         entity_name: format!("{:?}", manuscript),
         effects: [
             format!("Unlock {:?} Manuscript", manuscript),
@@ -440,22 +440,17 @@ fn new_manuscript_to_text(manuscript: &Manuscript) -> TransmutationTextOffer {
 }
 
 fn weapon_transmutation_offer_to_text(
-    weapon_transmutation: &WeaponTransmutationOffer,
+    offer: &WeaponTransmutationOffer,
     player_build: &PlayerBuild,
 ) -> TransmutationTextOffer {
     let mut transmuted_build: PlayerBuild = player_build.clone();
     let mut effects = [String::default(), String::default(), String::default()];
 
-    transmuted_build.apply_weapon_transmutation(weapon_transmutation);
+    transmuted_build.apply_weapon_transmutation(offer);
 
-    for (index, transmutation) in weapon_transmutation
-        .transmutations
-        .iter()
-        .flatten()
-        .enumerate()
-    {
+    for (index, transmutation) in offer.transmutations.iter().flatten().enumerate() {
         effects[index] = weapon_transmutation_to_text(
-            &weapon_transmutation.weapon,
+            &offer.weapon,
             transmutation,
             player_build,
             &transmuted_build,
@@ -463,9 +458,12 @@ fn weapon_transmutation_offer_to_text(
         .unwrap_or_default();
     }
 
+    let weapon_level = transmuted_build.weapon_level(&offer.weapon);
+
     TransmutationTextOffer {
         offer_type: "Weapon Transmutation".to_string(),
-        entity_name: format!("{:?} +1", weapon_transmutation.weapon),
+        item_sprite_index: offer.weapon.sprite_index(),
+        entity_name: format!("{:?} +{}", offer.weapon, weapon_level),
         effects,
     }
 }
@@ -477,7 +475,8 @@ fn manuscript_transmutation_to_text(
     let mut transmuted_build: PlayerBuild = player_build.clone();
     let mut effects = [String::default(), String::default(), String::default()];
 
-    transmuted_build.apply_manuscript(manuscript);
+    transmuted_build.apply_manuscript_transmutation(manuscript);
+    let transmutation_level = transmuted_build.manuscript_level(manuscript);
 
     let current_stat_text = player_build.manuscript_stat_text(manuscript);
     let transmuted_stat_text = transmuted_build.manuscript_stat_text(manuscript);
@@ -491,7 +490,8 @@ fn manuscript_transmutation_to_text(
 
     TransmutationTextOffer {
         offer_type: "Manuscript Transmutation".to_string(),
-        entity_name: format!("{:?} +1", manuscript),
+        item_sprite_index: manuscript.sprite_index(),
+        entity_name: format!("{:?} +{}", manuscript, transmutation_level),
         effects,
     }
 }
@@ -555,7 +555,7 @@ fn apply_transmutation_offer(
         }
         NewManuscript(manuscript) => {
             info!("Adding manuscript {:?}", manuscript);
-            player_build.apply_manuscript(&manuscript);
+            player_build.add_manuscript(&manuscript);
         }
         WeaponTransmutation(transmutation) => {
             info!("Applying weapon transmutation: {:?}", transmutation);
@@ -564,7 +564,7 @@ fn apply_transmutation_offer(
         }
         ManuscriptTransmutation(manuscript) => {
             info!("Applying manuscript transmutation {:?}", manuscript);
-            player_build.apply_manuscript(&manuscript);
+            player_build.apply_manuscript_transmutation(&manuscript);
         }
     }
 
