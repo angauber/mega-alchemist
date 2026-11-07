@@ -59,8 +59,6 @@ impl Plugin for PhysicsPlugin {
         .add_systems(Startup, rapier_config);
 
         #[cfg(feature = "dev_tools")]
-        {
-            app.add_plugins(RapierDebugRenderPlugin::default());
-        }
+        app.add_plugins(RapierDebugRenderPlugin::default());
     }
 }
