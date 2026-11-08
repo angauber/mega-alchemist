@@ -1,4 +1,6 @@
-wasm
+wasm/assets
+wasm/mega-alchemist.js
+wasm/mega-alchemist_bg.wasm
 target
 .idea
 output.txt
