@@ -1,13 +1,12 @@
 use crate::agent::Enemy;
 use crate::assets::ItemAssets;
 use crate::damage::ApplyDamage;
-use crate::game::InGameSystems;
+use crate::game::{GameState, InGameSystems};
 use crate::physics::started_collision_pairs;
 use crate::player::Player;
 use crate::weapon::Weapon::{Bow, Knife};
 use crate::weapon::{KNIFE_SPRITE_INDEX, Weapon};
 use bevy::prelude::*;
-use bevy_ecs_ldtk::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::rapier::prelude::CollisionEventFlags;
 
@@ -30,7 +29,7 @@ pub struct ProjectileRange {
 }
 
 #[derive(Component)]
-pub struct TargetTracking {
+struct TargetTracking {
     target: Entity,
 }
 
@@ -123,17 +122,12 @@ fn on_throw_projectile(
     event: On<ThrowProjectile>,
     mut commands: Commands,
     player_position_query: Query<&Transform, With<Player>>,
-    level_query: Query<Entity, With<LevelIid>>,
     items_assets: Res<ItemAssets>,
 ) {
     info!(
         "Projectile throw triggered by weapon {} for enemy {}",
         event.weapon_entity, event.target_entity
     );
-
-    let Ok(level_id) = level_query.single() else {
-        return;
-    };
 
     let Ok(player_transform) = player_position_query.single() else {
         return;
@@ -160,31 +154,36 @@ fn on_throw_projectile(
 
     let projectile_collider = Collider::ball(projectile_size);
 
-    let mut entity_command = commands.entity(level_id);
-
     if event.weapon == Knife {
-        entity_command.with_child(throwing_knife_bundle(
-            &items_assets,
-            projectile_transform,
-            projectile_velocity,
-            projectile_collider,
-            projectile_range,
-            projectile_damage,
-            event.target_entity,
+        commands.spawn((
+            throwing_knife_bundle(
+                &items_assets,
+                projectile_transform,
+                projectile_velocity,
+                projectile_collider,
+                projectile_range,
+                projectile_damage,
+                event.target_entity,
+            ),
+            DespawnOnEnter(GameState::InGame),
         ));
 
         return;
     }
 
     if event.weapon == Bow {
-        entity_command.with_child(arrow_bundle(
-            &items_assets,
-            projectile_transform,
-            projectile_velocity,
-            projectile_collider,
-            projectile_range,
-            projectile_damage,
+        commands.spawn((
+            arrow_bundle(
+                &items_assets,
+                projectile_transform,
+                projectile_velocity,
+                projectile_collider,
+                projectile_range,
+                projectile_damage,
+            ),
+            DespawnOnEnter(GameState::InGame),
         ));
+
         return;
     }
 

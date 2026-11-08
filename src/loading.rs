@@ -1,6 +1,7 @@
 use crate::asset_tracking::ResourceHandles;
 use crate::game::GameState;
 use bevy::prelude::*;
+use bevy_ecs_ldtk::LevelIid;
 
 pub struct LoadingPlugin;
 
@@ -17,12 +18,20 @@ fn all_assets_loaded(resource_handles: Res<ResourceHandles>) -> bool {
     resource_handles.is_all_done()
 }
 
+fn level_spawned(level_query: Query<Entity, With<LevelIid>>) -> bool {
+    level_query.single().is_ok()
+}
+
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Loading), spawn_loading_screen);
         app.add_systems(
             Update,
-            enter_gameplay_screen.run_if(in_state(GameState::Loading).and_then(all_assets_loaded)),
+            enter_gameplay_screen.run_if(
+                in_state(GameState::Loading)
+                    .and_then(all_assets_loaded)
+                    .and_then(level_spawned),
+            ),
         );
     }
 }

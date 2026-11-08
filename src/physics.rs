@@ -1,4 +1,4 @@
-use crate::game::GameState;
+use crate::game::PauseState;
 use bevy::app::*;
 use bevy::math::Vec2;
 use bevy::prelude::*;
@@ -54,8 +54,8 @@ impl Plugin for PhysicsPlugin {
         app.add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(
             PIXELS_PER_METER,
         ))
-        .add_systems(OnEnter(GameState::InGame), resume_physics)
-        .add_systems(OnEnter(GameState::Paused), pause_physics)
+        .add_systems(OnEnter(PauseState(true)), pause_physics)
+        .add_systems(OnEnter(PauseState(false)), resume_physics)
         .add_systems(Startup, rapier_config);
 
         #[cfg(feature = "dev_tools")]

@@ -1,4 +1,4 @@
-use crate::game::{GameOverWithDelay, GameState, InGameSystems};
+use crate::game::{GameOverWithDelay, InGameSystems};
 use crate::transmutation::DrawTransmutationOffers;
 use bevy::prelude::*;
 use std::time::Duration;
@@ -28,7 +28,6 @@ fn tick_level_timer(
     time: Res<Time>,
     mut timer: ResMut<LevelTimer>,
     mut player_level: ResMut<PlayerLevel>,
-    mut next_state: ResMut<NextState<GameState>>,
 ) {
     timer.0.tick(time.delta());
 
@@ -37,7 +36,7 @@ fn tick_level_timer(
     }
 
     player_level.0 += 1;
-    next_state.set(GameState::Paused);
+
     commands.trigger(DrawTransmutationOffers);
 }
 

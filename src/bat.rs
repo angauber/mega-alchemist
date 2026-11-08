@@ -2,16 +2,10 @@ use crate::agent::{AgentSteering, Enemy};
 use crate::animation::FlippableSprite;
 use crate::assets::MonsterAssets;
 use crate::attack::ContactAttack;
+use crate::game::GameState;
 use crate::health::Health;
-use bevy::app::{App, Plugin};
-use bevy::image::TextureAtlas;
-use bevy::prelude::{
-    Bundle, Commands, Entity, Event, On, Query, Res, Sprite, Timer, TimerMode, Transform, Vec3,
-    With,
-};
-use bevy_ecs_ldtk::LevelIid;
-use bevy_rapier2d::dynamics::{LockedAxes, RigidBody, Sleeping, Velocity};
-use bevy_rapier2d::geometry::{Collider, ColliderMassProperties};
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 const BAT_SPRITE_INDEX: usize = 78;
 
@@ -46,7 +40,7 @@ pub fn bat(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
         Velocity::default(),
         position,
         RigidBody::Dynamic,
-        Collider::ball(5.),
+        Collider::ball(8.),
         LockedAxes::ROTATION_LOCKED,
         ColliderMassProperties::Density(0.1),
         Sleeping::disabled(),
@@ -57,18 +51,16 @@ pub fn bat(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
 pub fn on_spawn_bat(
     event: On<SpawnBat>,
     mut commands: Commands,
-    level_query: Query<Entity, With<LevelIid>>,
     monster_assets: Res<MonsterAssets>,
 ) {
-    let Ok(level_id) = level_query.single() else {
-        return;
-    };
-
     let spawner_position = event.0;
 
-    commands.entity(level_id).with_child(bat(
-        &monster_assets,
-        spawner_position.with_scale(Vec3::splat(0.75)),
+    commands.spawn((
+        bat(
+            &monster_assets,
+            spawner_position.with_scale(Vec3::splat(0.65)),
+        ),
+        DespawnOnEnter(GameState::InGame),
     ));
 }
 

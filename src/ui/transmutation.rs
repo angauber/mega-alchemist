@@ -1,5 +1,5 @@
 use crate::assets::ItemAssets;
-use crate::game::GameState;
+use crate::game::PauseState;
 use crate::transmutation::ApplyTransmutationOffer;
 use crate::ui::game::{BROWN, DARK_GRAY};
 use bevy::ecs::template::OptionTemplate;
@@ -49,7 +49,7 @@ fn pick_offer(
     mut commands: Commands,
     offer_identifier_query: Query<&OfferIdentifier>,
     root_ui_query: Query<Entity, With<TransmutationOffersRootNode>>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_state: ResMut<NextState<PauseState>>,
 ) {
     let Ok(picked_offer_id) = offer_identifier_query.get(event.entity) else {
         warn!("No offer identifier found");
@@ -67,7 +67,7 @@ fn pick_offer(
 
     commands.entity(root_node).despawn();
 
-    next_state.set(GameState::InGame);
+    next_state.set(PauseState(false));
 }
 
 fn transmutation_ui(

@@ -1,4 +1,5 @@
 use crate::build::{PlayerBuild, Statistic};
+use crate::game::PauseState;
 use crate::manuscript::Manuscript;
 use crate::transmutation::TransmutationEffect::{Add, Multiply};
 use crate::transmutation::TransmutationOffer::*;
@@ -515,8 +516,11 @@ fn transmutation_offer_to_text(
 fn draw_transmutation_offers(
     _event: On<DrawTransmutationOffers>,
     player_build: Res<PlayerBuild>,
+    mut next_state: ResMut<NextState<PauseState>>,
     mut commands: Commands,
 ) {
+    next_state.set(PauseState(true));
+
     let mut offer_pool = TransmutationOfferPool::default();
 
     offer_pool.fill_pool(&player_build);

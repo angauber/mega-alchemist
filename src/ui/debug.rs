@@ -4,7 +4,7 @@ use crate::game::{EnemyCounter, GameClock, InGameSystems};
 use crate::player::PlayerPressure;
 use crate::spawn_manager::SpawnManager;
 use crate::ui::game::GameMainTextUiNode;
-use crate::ui::text::{UiTextBundle, ui_text};
+use crate::ui::text::ui_text;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 
