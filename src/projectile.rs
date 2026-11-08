@@ -35,6 +35,11 @@ struct TargetTracking {
 }
 
 #[derive(Component, Default)]
+struct Piercing {
+    pierced: usize,
+}
+
+#[derive(Component, Default)]
 struct Bounceable {
     bounces: Vec<Entity>,
 }
@@ -43,6 +48,11 @@ struct Bounceable {
 struct BounceableProjectileHit {
     projectile: Entity,
     hit: Entity,
+}
+
+#[derive(Event)]
+struct PiercingProjectileHit {
+    projectile: Entity,
 }
 
 fn knife_projectile_sprite(item_assets: &ItemAssets) -> impl Bundle {
@@ -117,6 +127,7 @@ fn arrow_bundle(
 ) -> impl Bundle {
     (
         projectile(Bow, transform, velocity, collider, range, damage),
+        Piercing::default(),
         arrow_projectile_sprite(item_assets),
     )
 }
@@ -226,6 +237,7 @@ fn trigger_projectile_hit(
     collision_events: MessageReader<CollisionEvent>,
     projectile_query: Query<&ProjectileDamage, With<Projectile>>,
     bounceable_query: Query<Entity, With<Bounceable>>,
+    piercing_query: Query<Entity, With<Piercing>>,
     enemy_query: Query<Entity, With<Enemy>>,
 ) {
     for (projectile, enemy) in
@@ -249,13 +261,16 @@ fn trigger_projectile_hit(
             text_color: None,
         });
 
-        let is_bounceable = bounceable_query.get(projectile).is_ok();
-
-        if is_bounceable {
+        if bounceable_query.get(projectile).is_ok() {
             commands.trigger(BounceableProjectileHit {
                 projectile,
                 hit: enemy,
             });
+            continue;
+        }
+
+        if piercing_query.get(projectile).is_ok() {
+            commands.trigger(PiercingProjectileHit { projectile });
             continue;
         }
 
@@ -347,10 +362,30 @@ fn handle_bounceable_projectile_hit(
     bounceable.bounces.push(event.hit);
 }
 
+fn handle_piercing_projectile_hit(
+    event: On<PiercingProjectileHit>,
+    mut piercing_query: Query<(&mut Piercing, &Weapon), With<Projectile>>,
+    player_build: Res<PlayerBuild>,
+    mut commands: Commands,
+) {
+    let Ok((mut piercing, weapon)) = piercing_query.get_mut(event.projectile) else {
+        return;
+    };
+
+    let max_pierce: usize = player_build.weapon_piercing(weapon).unwrap_or_default();
+
+    if piercing.pierced >= max_pierce {
+        commands.entity(event.projectile).despawn();
+    }
+
+    piercing.pierced += 1;
+}
+
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_throw_projectile)
             .add_observer(handle_bounceable_projectile_hit)
+            .add_observer(handle_piercing_projectile_hit)
             .add_systems(
                 Update,
                 (

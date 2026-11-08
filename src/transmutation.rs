@@ -391,6 +391,7 @@ impl TransmutationOfferPool {
     fn statistic_weight(stat: &Statistic) -> f64 {
         match stat {
             Statistic::Bounces => 5.,
+            Statistic::Piercing => 5.,
             Statistic::Damage => 5.,
             Statistic::AttackSpeed => 2.,
             Statistic::ProjectileCount => 1.,

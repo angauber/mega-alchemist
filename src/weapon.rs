@@ -75,7 +75,7 @@ pub fn projectile_weapon_build(
     weapon_damage: f32,
     projectile_size: f32,
     projectile_speed: f32,
-) -> HashMap<Statistic, StatisticData> {
+) -> Vec<(Statistic, StatisticData)> {
     vec![
         (
             Statistic::ProjectileCount,
@@ -101,20 +101,25 @@ pub fn projectile_weapon_build(
             Statistic::ProjectileSpeed,
             StatisticData::from_base_value(projectile_speed),
         ),
-        (Statistic::Bounces, StatisticData::from_base_value(0.0)),
     ]
-    .into_iter()
-    .collect()
 }
 
 // high attack speed, low range and damage
 pub fn knife_build() -> HashMap<Statistic, StatisticData> {
-    projectile_weapon_build(120.0, Duration::from_millis(1500), 10.0, 2.0, 120.0)
+    let mut build = projectile_weapon_build(120.0, Duration::from_millis(1500), 10.0, 2.0, 120.0);
+
+    build.push((Statistic::Bounces, StatisticData::from_base_value(0.0)));
+
+    build.into_iter().collect()
 }
 
 // High range and damage low attack speed
 pub fn bow_build() -> HashMap<Statistic, StatisticData> {
-    projectile_weapon_build(170.0, Duration::from_millis(1900), 15.0, 2.0, 170.0)
+    let mut build = projectile_weapon_build(170.0, Duration::from_millis(1900), 15.0, 2.0, 170.0);
+
+    build.push((Statistic::Piercing, StatisticData::from_base_value(0.0)));
+
+    build.into_iter().collect()
 }
 
 pub fn projectile_weapon() -> impl Bundle {
@@ -282,7 +287,7 @@ fn spawn_player_default_weapon(mut commands: Commands, player_query: Query<Entit
         return;
     };
 
-    commands.trigger(SpawnWeapon(Knife));
+    commands.trigger(SpawnWeapon(Bow));
 }
 
 impl Plugin for WeaponPlugin {
