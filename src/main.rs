@@ -32,6 +32,7 @@ mod bat;
 mod build;
 mod camera;
 mod damage;
+mod dragon;
 mod game;
 mod health;
 mod level;

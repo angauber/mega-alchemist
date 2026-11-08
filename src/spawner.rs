@@ -1,4 +1,5 @@
 use crate::bat::BatPlugin;
+use crate::dragon::DragonPlugin;
 use crate::skeleton::SkeletonPlugin;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
@@ -37,6 +38,7 @@ impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BatPlugin)
             .add_plugins(SkeletonPlugin)
+            .add_plugins(DragonPlugin)
             .register_ldtk_entity::<SpawnerBundle>("Spawner")
             .add_systems(Update, spawn_added);
 

@@ -1,14 +1,16 @@
 use crate::bat::SpawnBat;
 use crate::damage::PlayerDamage;
 use crate::game::{GameClock, GameOver, InGameSystems};
+use crate::level::PlayerLevel;
 use crate::player::{Player, PlayerPressure};
 use crate::skeleton::SpawnSkeleton;
-use crate::spawn_manager::Enemy::{Bat, Skeleton};
+use crate::spawn_manager::Enemy::{Bat, Dragon, Skeleton};
 use crate::spawner::Spawner;
 use bevy::prelude::*;
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use std::time::Duration;
+use crate::dragon::SpawnDragon;
 
 const SPAWN_KILL_RADIUS: f32 = 150.;
 
@@ -18,17 +20,27 @@ pub struct SpawnManagerPlugin;
 pub enum Enemy {
     Bat,
     Skeleton,
+    Dragon,
 }
 
 impl Enemy {
     pub fn all() -> Vec<Self> {
-        vec![Bat, Skeleton]
+        vec![Bat, Skeleton, Dragon]
     }
 
     pub fn cost(&self) -> f32 {
         match self {
             Bat => 15.0,
             Skeleton => 50.0,
+            Dragon => 150.0,
+        }
+    }
+
+    pub fn unlocks_at(&self) -> usize {
+        match self {
+            Bat => 0,
+            Skeleton => 3,
+            Dragon => 10,
         }
     }
 }
@@ -36,13 +48,15 @@ impl Enemy {
 pub struct SpawnWeights {
     bat: usize,
     skeleton: usize,
+    dragon: usize,
 }
 
 impl Default for SpawnWeights {
     fn default() -> Self {
         SpawnWeights {
-            bat: 10,
-            skeleton: 1,
+            bat: 100,
+            skeleton: 10,
+            dragon: 5,
         }
     }
 }
@@ -95,8 +109,8 @@ impl SpawnManager {
         self.bank_value += self.bank_budget * dt;
     }
 
-    pub fn spawnable_enemy(&mut self) -> Option<Enemy> {
-        let random_enemy = self.memory.unwrap_or_else(|| self.random_enemy());
+    pub fn spawnable_enemy(&mut self, player_level: usize) -> Option<Enemy> {
+        let random_enemy = self.memory.unwrap_or_else(|| self.random_enemy(player_level));
 
         if self.memory.is_none() {
             self.memory = Some(random_enemy);
@@ -119,23 +133,21 @@ impl SpawnManager {
         self.memory = None;
     }
 
-    fn random_enemy(&mut self) -> Enemy {
-        let enemies = Enemy::all();
+    fn random_enemy(&mut self, player_level: usize) -> Enemy {
+        let enemies: Vec<Enemy> = Enemy::all()
+            .into_iter()
+            .filter(|enemy| player_level >= enemy.unlocks_at())
+            .collect();
 
         let weights: Vec<usize> = enemies.iter().map(|enemy| self.weight(enemy)).collect();
+
+        info!("Enemies in pool: {:?} weights {:?}", enemies, weights);
 
         let weighted_index = WeightedIndex::new(&weights).unwrap();
         let mut rng = rand::rng();
         let index = weighted_index.sample(&mut rng);
 
         enemies[index]
-    }
-
-    fn weight(&self, enemy: &Enemy) -> usize {
-        match enemy {
-            Bat => self.weights.bat,
-            Skeleton => self.weights.skeleton,
-        }
     }
 
     pub fn update_bank_budget(&mut self, in_game_time: f32, player_pressure: f32) {
@@ -152,6 +164,14 @@ impl SpawnManager {
         let new_budget = self.ref_dps + ((target_pressure - player_pressure) / self.catch_up_time);
 
         self.bank_budget = new_budget.clamp(min_budget, max_budget);
+    }
+
+    fn weight(&self, enemy: &Enemy) -> usize {
+        match enemy {
+            Bat => self.weights.bat,
+            Skeleton => self.weights.skeleton,
+            Dragon => self.weights.dragon,
+        }
     }
 }
 
@@ -181,6 +201,7 @@ fn spawn_enemy(
     mut spawn_ticker: ResMut<SpawnTicker>,
     spawners_query: Query<&Transform, With<Spawner>>,
     player_position_query: Query<&Transform, With<Player>>,
+    player_level: Res<PlayerLevel>,
     time: Res<Time>,
 ) {
     spawn_ticker.0.tick(time.delta());
@@ -193,7 +214,7 @@ fn spawn_enemy(
         return;
     };
 
-    let Some(enemy_to_spawn) = spawn_manager.spawnable_enemy() else {
+    let Some(enemy_to_spawn) = spawn_manager.spawnable_enemy(player_level.0) else {
         return;
     };
 
@@ -228,6 +249,9 @@ fn spawn_enemy(
         }
         Skeleton => {
             commands.trigger(SpawnSkeleton(enemy_position));
+        }
+        Dragon => {
+            commands.trigger(SpawnDragon(enemy_position));
         }
     }
 

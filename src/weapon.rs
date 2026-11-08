@@ -287,7 +287,7 @@ fn spawn_player_default_weapon(mut commands: Commands, player_query: Query<Entit
         return;
     };
 
-    commands.trigger(SpawnWeapon(Bow));
+    commands.trigger(SpawnWeapon(Knife));
 }
 
 impl Plugin for WeaponPlugin {
