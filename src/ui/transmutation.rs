@@ -88,12 +88,13 @@ fn transmutation_ui(
         Children [
             Node {
                 flex_direction: FlexDirection::Column,
-                max_width: px(800.),
-                max_height: percent(80),
-                min_width: px(700),
-                min_height: px(400),
+                width: px(700.),
+                max_width: percent(90),
+                max_height: percent(90),
                 justify_content: JustifyContent::SpaceBetween,
                 align_items: AlignItems::Center,
+                padding: UiRect::all(px(20.)),
+                row_gap: px(20.),
                 border_radius: BorderRadius::all(CornerRadius::all(px(20.))),
             }
             BackgroundColor(BROWN)

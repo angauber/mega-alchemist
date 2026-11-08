@@ -6,6 +6,7 @@ use crate::ui::text::UiTextBundle;
 use bevy::app::{App, Plugin};
 use bevy::color::Color;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 pub struct GameUiPlugin;
 
@@ -103,18 +104,27 @@ fn update_game_clock_text(
     game_clock_text.0 = format!("Time {:.2}", game_clock.0.elapsed_secs());
 }
 
+fn update_ui_scale(window: Single<&Window, With<PrimaryWindow>>, mut ui_scale: ResMut<UiScale>) {
+    let scale = window.height() / 1200.0;
+
+    if ui_scale.0 != scale {
+        ui_scale.0 = scale;
+    }
+}
+
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnTransition {
-                exited: GameState::Loading,
-                entered: GameState::InGame,
-            },
-            setup_game_ui_node,
-        )
-        .add_systems(
-            PostUpdate,
-            (update_player_health_text, update_game_clock_text).in_set(InGameSystems),
-        );
+        app.add_systems(Update, update_ui_scale)
+            .add_systems(
+                OnTransition {
+                    exited: GameState::Loading,
+                    entered: GameState::InGame,
+                },
+                setup_game_ui_node,
+            )
+            .add_systems(
+                PostUpdate,
+                (update_player_health_text, update_game_clock_text).in_set(InGameSystems),
+            );
     }
 }
