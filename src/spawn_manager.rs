@@ -1,5 +1,6 @@
 use crate::bat::SpawnBat;
 use crate::damage::PlayerDamage;
+use crate::dragon::SpawnDragon;
 use crate::game::{GameClock, GameOver, InGameSystems};
 use crate::level::PlayerLevel;
 use crate::player::{Player, PlayerPressure};
@@ -10,9 +11,9 @@ use bevy::prelude::*;
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use std::time::Duration;
-use crate::dragon::SpawnDragon;
 
-const SPAWN_KILL_RADIUS: f32 = 150.;
+const MIN_SPAWNER_DISTANCE: f32 = 150.;
+const MAX_SPAWNER_DISTANCE: f32 = 500.;
 
 pub struct SpawnManagerPlugin;
 
@@ -110,7 +111,9 @@ impl SpawnManager {
     }
 
     pub fn spawnable_enemy(&mut self, player_level: usize) -> Option<Enemy> {
-        let random_enemy = self.memory.unwrap_or_else(|| self.random_enemy(player_level));
+        let random_enemy = self
+            .memory
+            .unwrap_or_else(|| self.random_enemy(player_level));
 
         if self.memory.is_none() {
             self.memory = Some(random_enemy);
@@ -224,7 +227,9 @@ fn spawn_enemy(
     let spawner_pool = spawners_query
         .iter()
         .filter(|spawner_position| {
-            spawner_position.translation.xy().distance(player_position) >= SPAWN_KILL_RADIUS
+            let distance = spawner_position.translation.xy().distance(player_position);
+
+            distance > MIN_SPAWNER_DISTANCE && distance < MAX_SPAWNER_DISTANCE
         })
         .collect::<Vec<_>>();
 

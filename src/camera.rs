@@ -9,7 +9,7 @@ fn setup_camera(mut commands: Commands) {
     let mut projection = OrthographicProjection::default_2d();
 
     projection.scaling_mode = ScalingMode::FixedVertical {
-        viewport_height: 350.0,
+        viewport_height: 300.0,
     };
 
     commands.spawn((Camera2d, Projection::from(projection), Transform::default()));
