@@ -5,11 +5,17 @@ use std::time::Duration;
 
 pub struct LevelPlugin;
 
-#[derive(Resource, Default)]
-pub struct PlayerLevel(usize);
+#[derive(Resource)]
+pub struct PlayerLevel(pub usize);
 
 #[derive(Resource)]
 struct LevelTimer(Timer);
+
+impl Default for PlayerLevel {
+    fn default() -> Self {
+        PlayerLevel(1)
+    }
+}
 
 impl Default for LevelTimer {
     fn default() -> Self {

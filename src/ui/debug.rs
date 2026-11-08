@@ -1,10 +1,10 @@
 use crate::assets::FontAssets;
 use crate::damage::PlayerDamage;
-use crate::game::{EnemyCounter, InGameSystems};
+use crate::game::{EnemyCounter, GameClock, InGameSystems};
 use crate::player::PlayerPressure;
 use crate::spawn_manager::SpawnManager;
 use crate::ui::game::GameMainTextUiNode;
-use crate::ui::text::UiTextBundle;
+use crate::ui::text::{UiTextBundle, ui_text};
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 
@@ -12,7 +12,7 @@ pub struct DebugPlugin;
 
 #[derive(Component)]
 struct EnemyCountText;
-#[derive(Component)]
+#[derive(Component, Clone, Default)]
 struct FramePerSecondText;
 #[derive(Component)]
 struct PlayerDpsText;
@@ -20,15 +20,12 @@ struct PlayerDpsText;
 struct PlayerPressureText;
 #[derive(Component)]
 struct BankBudgetText;
+#[derive(Component, Clone, Default)]
+struct GameClockText;
 
 fn setup_debug_ui_nodes(
     mut commands: Commands,
     game_ui_query: Query<Entity, Added<GameMainTextUiNode>>,
-    enemy_counter: Res<EnemyCounter>,
-    spawn_manager: Res<SpawnManager>,
-    player_damage: Res<PlayerDamage>,
-    player_pressure: Res<PlayerPressure>,
-    diagnostic: Res<DiagnosticsStore>,
     font_assets: Res<FontAssets>,
 ) {
     let Ok(game_ui_entity) = game_ui_query.single() else {
@@ -39,71 +36,12 @@ fn setup_debug_ui_nodes(
 
     commands
         .entity(game_ui_entity)
-        .with_child((
-            FramePerSecondText,
-            UiTextBundle {
-                text: fps_text(diagnostic),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font.clone(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ))
-        .with_child((
-            EnemyCountText,
-            UiTextBundle {
-                text: enemy_count_text(enemy_counter.count),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font.clone(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ))
-        .with_child((
-            PlayerDpsText,
-            UiTextBundle {
-                text: player_dps_text(player_damage.per_second),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font.clone(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ))
-        .with_child((
-            PlayerPressureText,
-            UiTextBundle {
-                text: player_pressure_text(player_pressure.0),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font.clone(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ))
-        .with_child((
-            BankBudgetText,
-            UiTextBundle {
-                text: bank_budget_text(spawn_manager.bank_budget()),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font.clone(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ));
+        .with_child((FramePerSecondText, ui_text(font.clone(), 32.)))
+        .with_child((GameClockText, ui_text(font.clone(), 32.)))
+        .with_child((EnemyCountText, ui_text(font.clone(), 32.)))
+        .with_child((PlayerDpsText, ui_text(font.clone(), 32.)))
+        .with_child((PlayerPressureText, ui_text(font.clone(), 32.)))
+        .with_child((BankBudgetText, ui_text(font.clone(), 32.)));
 }
 
 fn update_fps_text(
@@ -161,6 +99,17 @@ fn update_bank_budget_text(
     *budget_text = bank_budget_text(spawn_manager.bank_budget());
 }
 
+fn update_game_clock_text(
+    game_clock: Res<GameClock>,
+    mut game_clock_text_query: Query<&mut Text, With<GameClockText>>,
+) {
+    let Ok(mut game_clock_text) = game_clock_text_query.single_mut() else {
+        return;
+    };
+
+    game_clock_text.0 = format!("Time {:.2}", game_clock.0.elapsed_secs());
+}
+
 fn fps_text(diagnostic: Res<DiagnosticsStore>) -> Text {
     let Some(fps_diag) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) else {
         return Text::default();
@@ -197,6 +146,7 @@ impl Plugin for DebugPlugin {
                 (
                     setup_debug_ui_nodes,
                     update_fps_text,
+                    update_game_clock_text,
                     update_enemy_count_text,
                     update_player_dps_text,
                     update_player_pressure_text,

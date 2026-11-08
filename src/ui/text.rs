@@ -67,6 +67,19 @@ pub struct UiTextBundle {
     pub layout: TextLayout,
 }
 
+pub fn ui_text(font: FontSource, font_size: f32) -> UiTextBundle {
+    UiTextBundle {
+        text: Text::default(),
+        color: TextColor(Color::WHITE),
+        font: TextFont {
+            font,
+            font_size: FontSize::Px(font_size),
+            ..default()
+        },
+        layout: TextLayout::justify(Justify::Center),
+    }
+}
+
 fn render_ui_text(
     mut commands: Commands,
     mut ui_text_event: MessageReader<RenderUiText>,

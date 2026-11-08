@@ -1,8 +1,9 @@
 use crate::assets::FontAssets;
-use crate::game::{GameClock, GameState, InGameSystems};
+use crate::game::{GameState, InGameSystems};
 use crate::health::Health;
+use crate::level::PlayerLevel;
 use crate::player::Player;
-use crate::ui::text::UiTextBundle;
+use crate::ui::text::ui_text;
 use bevy::app::{App, Plugin};
 use bevy::color::Color;
 use bevy::prelude::*;
@@ -28,10 +29,10 @@ pub struct GameMainTextUiNode;
 struct PlayerHealthUI;
 
 #[derive(Component, Default)]
-struct GameClockUI;
+struct PlayerLevelUI;
 
 fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
-    let font_handle = font_assets.pixuf_font.clone();
+    let font = FontSource::Handle(font_assets.pixuf_font.clone());
 
     commands
         .spawn((
@@ -46,32 +47,8 @@ fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
                 ..default()
             },
         ))
-        .with_child((
-            PlayerHealthUI,
-            UiTextBundle {
-                text: Text::default(),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font_handle.clone().into(),
-                    font_size: FontSize::Px(64.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ))
-        .with_child((
-            GameClockUI,
-            UiTextBundle {
-                text: Text::default(),
-                color: TextColor(Color::WHITE),
-                font: TextFont {
-                    font: font_handle.into(),
-                    font_size: FontSize::Px(32.),
-                    ..default()
-                },
-                layout: TextLayout::justify(Justify::Center),
-            },
-        ));
+        .with_child((PlayerHealthUI, ui_text(font.clone(), 64.)))
+        .with_child((PlayerLevelUI, ui_text(font.clone(), 32.)));
 }
 
 fn format_player_health_text(health: &Health) -> Text {
@@ -93,15 +70,15 @@ fn update_player_health_text(
     *player_health_text = format_player_health_text(player_health);
 }
 
-fn update_game_clock_text(
-    game_clock: Res<GameClock>,
-    mut game_clock_text_query: Query<&mut Text, With<GameClockUI>>,
+fn update_level_text(
+    player_leve: Res<PlayerLevel>,
+    mut text_query: Query<&mut Text, With<PlayerLevelUI>>,
 ) {
-    let Ok(mut game_clock_text) = game_clock_text_query.single_mut() else {
+    let Ok(mut text) = text_query.single_mut() else {
         return;
     };
 
-    game_clock_text.0 = format!("Time {:.2}", game_clock.0.elapsed_secs());
+    text.0 = format!("Alchemy Level {}", player_leve.0);
 }
 
 fn update_ui_scale(window: Single<&Window, With<PrimaryWindow>>, mut ui_scale: ResMut<UiScale>) {
@@ -124,7 +101,7 @@ impl Plugin for GameUiPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (update_player_health_text, update_game_clock_text).in_set(InGameSystems),
+                (update_player_health_text, update_level_text).in_set(InGameSystems),
             );
     }
 }
