@@ -358,9 +358,9 @@ impl TransmutationOfferPool {
     }
 
     fn draw_transmutation_effect(&self, stat: &Statistic) -> TransmutationEffect {
-        if stat == &Statistic::ProjectileCount {
+        if stat.is_incremental() {
             let amounts = [1, 2, 3];
-            let weights = [20, 8, 1];
+            let weights = [80, 8, 2];
 
             let mut rng = rand::rng();
             let weighted_index = WeightedIndex::new(weights).unwrap();
@@ -390,6 +390,7 @@ impl TransmutationOfferPool {
 
     fn statistic_weight(stat: &Statistic) -> f64 {
         match stat {
+            Statistic::Bounces => 5.,
             Statistic::Damage => 5.,
             Statistic::AttackSpeed => 2.,
             Statistic::ProjectileCount => 1.,

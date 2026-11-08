@@ -26,6 +26,13 @@ pub enum Statistic {
     AttackSpeed,
     ProjectileSpeed,
     ProjectileCount,
+    Bounces,
+}
+
+impl Statistic {
+    pub fn is_incremental(&self) -> bool {
+        matches!(self, Statistic::ProjectileCount | Statistic::Bounces)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -230,6 +237,15 @@ impl PlayerBuild {
         Ok(self.projectile_count + weapon_projectile_count)
     }
 
+    pub fn weapon_bounces(&self, weapon: &Weapon) -> Result<usize, &str> {
+        let bounces = self
+            .weapon_build(weapon)?
+            .get_stat(&Statistic::Bounces)?
+            .base_value as usize;
+
+        Ok(bounces)
+    }
+
     pub fn empty_weapon_slots(&self) -> usize {
         MAX_MANUSCRIPTS - self.weapon_builds.len()
     }
@@ -268,6 +284,7 @@ impl PlayerBuild {
                 format!("{:.1}", self.weapon_projectile_speed(weapon)?)
             }
             Statistic::ProjectileCount => self.weapon_projectile_count(weapon)?.to_string(),
+            Statistic::Bounces => self.weapon_bounces(weapon)?.to_string(),
             Statistic::MoveSpeed => "".to_string(),
         };
 
@@ -291,6 +308,7 @@ impl PlayerBuild {
             Statistic::ProjectileSpeed => format_percentage(self.projectile_speed),
             Statistic::MoveSpeed => format_percentage(self.move_speed),
             Statistic::ProjectileCount => (1 + self.projectile_count).to_string(),
+            Statistic::Bounces => panic!("unhandled manuscript stat: Bounces"),
         }
     }
 
@@ -303,6 +321,7 @@ impl PlayerBuild {
             Statistic::ProjectileSize => self.projectile_size += 0.1,
             Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
             Statistic::MoveSpeed => self.move_speed += 0.05,
+            Statistic::Bounces => panic!("unhandled manuscript stat: Bounces"),
         };
     }
 }

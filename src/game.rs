@@ -153,6 +153,6 @@ impl Plugin for GamePlugin {
             .add_systems(Update, count_enemies.in_set(InGameSystems));
 
         #[cfg(feature = "dev_tools")]
-        app.add_systems(Update, toggle_game_state_on_space.in_set(InGameSystems));
+        app.add_systems(Update, toggle_game_state_on_space);
     }
 }

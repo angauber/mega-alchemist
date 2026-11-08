@@ -101,6 +101,7 @@ pub fn projectile_weapon_build(
             Statistic::ProjectileSpeed,
             StatisticData::from_base_value(projectile_speed),
         ),
+        (Statistic::Bounces, StatisticData::from_base_value(0.0)),
     ]
     .into_iter()
     .collect()
@@ -108,12 +109,12 @@ pub fn projectile_weapon_build(
 
 // high attack speed, low range and damage
 pub fn knife_build() -> HashMap<Statistic, StatisticData> {
-    projectile_weapon_build(100.0, Duration::from_millis(1500), 10.0, 2.0, 150.0)
+    projectile_weapon_build(120.0, Duration::from_millis(1500), 10.0, 2.0, 120.0)
 }
 
 // High range and damage low attack speed
 pub fn bow_build() -> HashMap<Statistic, StatisticData> {
-    projectile_weapon_build(170.0, Duration::from_millis(1900), 15.0, 2.0, 200.0)
+    projectile_weapon_build(170.0, Duration::from_millis(1900), 15.0, 2.0, 170.0)
 }
 
 pub fn projectile_weapon() -> impl Bundle {

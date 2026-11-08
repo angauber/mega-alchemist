@@ -1,11 +1,12 @@
 use crate::agent::Enemy;
 use crate::assets::ItemAssets;
+use crate::build::PlayerBuild;
 use crate::damage::ApplyDamage;
 use crate::game::{GameState, InGameSystems};
 use crate::physics::started_collision_pairs;
 use crate::player::Player;
 use crate::weapon::Weapon::{Bow, Knife};
-use crate::weapon::{KNIFE_SPRITE_INDEX, Weapon};
+use crate::weapon::{KNIFE_SPRITE_INDEX, TargetReserved, Weapon};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier2d::rapier::prelude::CollisionEventFlags;
@@ -33,6 +34,17 @@ struct TargetTracking {
     target: Entity,
 }
 
+#[derive(Component, Default)]
+struct Bounceable {
+    bounces: Vec<Entity>,
+}
+
+#[derive(Event)]
+struct BounceableProjectileHit {
+    projectile: Entity,
+    hit: Entity,
+}
+
 fn knife_projectile_sprite(item_assets: &ItemAssets) -> impl Bundle {
     Sprite::from_atlas_image(
         item_assets.sprite.clone(),
@@ -54,6 +66,7 @@ fn arrow_projectile_sprite(item_assets: &ItemAssets) -> impl Bundle {
 }
 
 pub fn projectile(
+    weapon: Weapon,
     transform: Transform,
     velocity: Velocity,
     collider: Collider,
@@ -62,6 +75,7 @@ pub fn projectile(
 ) -> impl Bundle {
     (
         Projectile,
+        weapon,
         transform,
         velocity,
         collider,
@@ -86,8 +100,9 @@ fn throwing_knife_bundle(
     target: Entity,
 ) -> impl Bundle {
     (
-        projectile(transform, velocity, collider, range, damage),
+        projectile(Knife, transform, velocity, collider, range, damage),
         TargetTracking { target },
+        Bounceable::default(),
         knife_projectile_sprite(item_assets),
     )
 }
@@ -101,7 +116,7 @@ fn arrow_bundle(
     damage: f32,
 ) -> impl Bundle {
     (
-        projectile(transform, velocity, collider, range, damage),
+        projectile(Bow, transform, velocity, collider, range, damage),
         arrow_projectile_sprite(item_assets),
     )
 }
@@ -206,10 +221,11 @@ fn despawn_projectile_on_range_exceeded(
     }
 }
 
-fn handle_projectile_hit(
+fn trigger_projectile_hit(
     mut commands: Commands,
     collision_events: MessageReader<CollisionEvent>,
     projectile_query: Query<&ProjectileDamage, With<Projectile>>,
+    bounceable_query: Query<Entity, With<Bounceable>>,
     enemy_query: Query<Entity, With<Enemy>>,
 ) {
     for (projectile, enemy) in
@@ -232,6 +248,16 @@ fn handle_projectile_hit(
             damage,
             text_color: None,
         });
+
+        let is_bounceable = bounceable_query.get(projectile).is_ok();
+
+        if is_bounceable {
+            commands.trigger(BounceableProjectileHit {
+                projectile,
+                hit: enemy,
+            });
+            continue;
+        }
 
         commands.entity(projectile).despawn();
     }
@@ -256,16 +282,83 @@ fn update_projectile_target_tracking(
     }
 }
 
+fn handle_bounceable_projectile_hit(
+    event: On<BounceableProjectileHit>,
+    mut bounceable_projectile_query: Query<
+        (
+            &mut TargetTracking,
+            &mut Bounceable,
+            &mut ProjectileRange,
+            &Weapon,
+            &Transform,
+        ),
+        With<Projectile>,
+    >,
+    enemies_query: Query<(Entity, &Transform), (With<Enemy>, Without<TargetReserved>)>,
+    player_build: Res<PlayerBuild>,
+    mut commands: Commands,
+) {
+    let Ok((mut tracking, mut bounceable, mut projectile_range, weapon, projectile_transform)) =
+        bounceable_projectile_query.get_mut(event.projectile)
+    else {
+        return;
+    };
+
+    let max_bounces: usize = player_build.weapon_bounces(weapon).unwrap_or_default();
+
+    if bounceable.bounces.len() >= max_bounces {
+        commands.entity(event.projectile).despawn();
+        return;
+    }
+
+    let projectile_position = projectile_transform.translation.xy();
+
+    let mut in_range_enemies = enemies_query
+        .iter()
+        .filter(|(enemy_entity, _enemy_transform)| {
+            *enemy_entity != event.hit && !bounceable.bounces.contains(enemy_entity)
+        })
+        .filter(|(_enemy_entity, enemy_transform)| {
+            projectile_position.distance(enemy_transform.translation.xy()) <= projectile_range.range
+        })
+        .collect::<Vec<_>>();
+
+    in_range_enemies.sort_by(|a, b| {
+        let enemy_a = projectile_position.distance(a.1.translation.xy());
+        let enemy_b = projectile_position.distance(b.1.translation.xy());
+
+        enemy_a.total_cmp(&enemy_b)
+    });
+
+    let Some((closest_enemy, _closest_enemy_pos)) = in_range_enemies.first() else {
+        commands.entity(event.projectile).despawn();
+        return;
+    };
+
+    let origin_target_distance = projectile_range
+        .origin
+        .distance(projectile_transform.translation.xy());
+
+    projectile_range.range -= origin_target_distance;
+    projectile_range.origin = projectile_transform.translation.xy();
+
+    tracking.target = *closest_enemy;
+
+    bounceable.bounces.push(event.hit);
+}
+
 impl Plugin for ProjectilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_throw_projectile).add_systems(
-            Update,
-            (
-                handle_projectile_hit,
-                despawn_projectile_on_range_exceeded,
-                update_projectile_target_tracking,
-            )
-                .in_set(InGameSystems),
-        );
+        app.add_observer(on_throw_projectile)
+            .add_observer(handle_bounceable_projectile_hit)
+            .add_systems(
+                Update,
+                (
+                    trigger_projectile_hit,
+                    despawn_projectile_on_range_exceeded,
+                    update_projectile_target_tracking,
+                )
+                    .in_set(InGameSystems),
+            );
     }
 }
