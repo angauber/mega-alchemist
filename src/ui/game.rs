@@ -56,7 +56,7 @@ fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
 }
 
 fn format_player_health_text(health: &Health) -> Text {
-    format!("HP {} / {}", health.points, health.max).into()
+    format!("HP {:.0} / {}", health.points, health.max).into()
 }
 
 fn update_player_health_text(

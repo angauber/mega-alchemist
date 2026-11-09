@@ -1,3 +1,4 @@
+use crate::build::PlayerBuild;
 use crate::game::{GameOver, InGameSystems};
 use crate::level::IncreasePlayerXP;
 use crate::player::Player;
@@ -39,8 +40,22 @@ pub fn entities_health_system(
     }
 }
 
+pub fn regen_health_system(
+    mut player_query: Query<&mut Health, With<Player>>,
+    player_build: Res<PlayerBuild>,
+    time: Res<Time>,
+) {
+    let Ok(mut health) = player_query.single_mut() else {
+        return;
+    };
+
+    health.points += player_build.regen * time.delta_secs() * 2.0;
+    health.points = health.points.clamp(0.0, health.max);
+}
+
 impl Plugin for HealthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, entities_health_system.in_set(InGameSystems));
+        app.add_systems(PreUpdate, entities_health_system.in_set(InGameSystems))
+            .add_systems(Update, regen_health_system.in_set(InGameSystems));
     }
 }

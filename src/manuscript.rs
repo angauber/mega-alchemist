@@ -8,6 +8,7 @@ pub enum Manuscript {
     Quantity,
     Agility,
     Vision,
+    Vitality,
 }
 
 impl Manuscript {
@@ -18,6 +19,7 @@ impl Manuscript {
             Manuscript::Quantity,
             Manuscript::Agility,
             Manuscript::Vision,
+            Manuscript::Vitality,
         ]
     }
 
@@ -28,6 +30,7 @@ impl Manuscript {
             Manuscript::Quantity => Statistic::ProjectileCount,
             Manuscript::Agility => Statistic::MoveSpeed,
             Manuscript::Vision => Statistic::Range,
+            Manuscript::Vitality => Statistic::Regen,
         }
     }
 
@@ -38,6 +41,7 @@ impl Manuscript {
             Manuscript::Quantity => 234,
             Manuscript::Agility => 235,
             Manuscript::Vision => 233,
+            Manuscript::Vitality => 236,
         }
     }
 }

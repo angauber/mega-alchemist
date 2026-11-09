@@ -28,6 +28,7 @@ pub enum Statistic {
     ProjectileCount,
     Bounces,
     Piercing,
+    Regen,
 }
 
 impl Statistic {
@@ -130,6 +131,7 @@ pub struct PlayerBuild {
     pub projectile_count: usize,
     pub projectile_size: f32,
     pub projectile_speed: f32,
+    pub regen: f32,
 }
 
 impl Default for PlayerBuild {
@@ -151,6 +153,7 @@ impl PlayerBuild {
             projectile_count: 0,
             projectile_size: 1.0,
             projectile_speed: 1.0,
+            regen: 0.0,
         }
     }
 
@@ -300,6 +303,7 @@ impl PlayerBuild {
             Statistic::Bounces => self.weapon_bounces(weapon)?.to_string(),
             Statistic::Piercing => self.weapon_piercing(weapon)?.to_string(),
             Statistic::MoveSpeed => "".to_string(),
+            Statistic::Regen => "".to_string(),
         };
 
         Ok(value)
@@ -322,6 +326,7 @@ impl PlayerBuild {
             Statistic::ProjectileSpeed => format_percentage(self.projectile_speed),
             Statistic::MoveSpeed => format_percentage(self.move_speed),
             Statistic::ProjectileCount => (1 + self.projectile_count).to_string(),
+            Statistic::Regen => format!("{:.0}%", self.regen * 100.),
             Statistic::Bounces => panic!("unhandled manuscript stat: Bounces"),
             Statistic::Piercing => panic!("unhandled manuscript stat: Piercing"),
         }
@@ -336,6 +341,7 @@ impl PlayerBuild {
             Statistic::ProjectileSize => self.projectile_size += 0.1,
             Statistic::ProjectileSpeed => self.projectile_speed += 0.1,
             Statistic::MoveSpeed => self.move_speed += 0.05,
+            Statistic::Regen => self.regen += 0.10,
             Statistic::Bounces => panic!("unhandled manuscript stat: Bounces"),
             Statistic::Piercing => panic!("unhandled manuscript stat: Piercing"),
         };
