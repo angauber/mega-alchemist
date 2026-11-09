@@ -27,7 +27,7 @@ pub fn dragon_sprite(monster_assets: &MonsterAssets) -> Sprite {
 pub fn dragon(monster_assets: &MonsterAssets, position: Transform) -> impl Bundle {
     (
         Enemy,
-        Health::new(150.),
+        Health::new(200.),
         ContactAttack {
             damage: 50.,
             cooldown: Timer::from_seconds(0.3, TimerMode::Once),

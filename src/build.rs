@@ -9,7 +9,7 @@ use std::time::Duration;
 
 #[allow(dead_code)]
 const MAX_WEAPONS: usize = 2;
-const MAX_MANUSCRIPTS: usize = 2;
+const MAX_MANUSCRIPTS: usize = 3;
 
 pub struct BuildPlugin;
 
@@ -260,7 +260,7 @@ impl PlayerBuild {
     }
 
     pub fn empty_weapon_slots(&self) -> usize {
-        MAX_MANUSCRIPTS - self.weapon_builds.len()
+        MAX_WEAPONS - self.weapon_builds.len()
     }
 
     pub fn empty_manuscript_slots(&self) -> usize {
@@ -331,7 +331,7 @@ impl PlayerBuild {
         match manuscript.statistic() {
             Statistic::ProjectileCount => self.projectile_count += 1,
             Statistic::AttackSpeed => self.attack_speed += 0.09,
-            Statistic::Range => self.range += 0.08,
+            Statistic::Range => self.range += 0.07,
             Statistic::Damage => self.damage += 0.1,
             Statistic::ProjectileSize => self.projectile_size += 0.1,
             Statistic::ProjectileSpeed => self.projectile_speed += 0.1,

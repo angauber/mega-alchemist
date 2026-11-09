@@ -1,58 +1,64 @@
-use crate::game::{GameOverWithDelay, InGameSystems};
+use crate::game::GameOverWithDelay;
 use crate::transmutation::DrawTransmutationOffers;
+use bevy::math::ops::floor;
 use bevy::prelude::*;
-use std::time::Duration;
 
 pub struct LevelPlugin;
 
-#[derive(Resource)]
-pub struct PlayerLevel(pub usize);
+const XP_BASE: f32 = 100.;
+const POW_MOD: f32 = 2.0;
 
-#[derive(Resource)]
-struct LevelTimer(Timer);
+#[derive(Event)]
+pub struct IncreasePlayerXP(pub usize);
 
-impl Default for PlayerLevel {
-    fn default() -> Self {
-        PlayerLevel(1)
+#[derive(Resource, Default)]
+pub struct PlayerLevel {
+    xp: usize,
+}
+
+impl PlayerLevel {
+    pub fn xp(&self) -> usize {
+        self.xp
+    }
+
+    pub fn increase_xp(&mut self, points: usize) -> usize {
+        let current_level = self.level();
+
+        self.xp += points;
+
+        let new_level = self.level();
+
+        info!(
+            "current level: {}  | new level: {}",
+            current_level, new_level
+        );
+
+        new_level - current_level
+    }
+
+    pub fn level(&self) -> usize {
+        1 + floor((self.xp as f32 / XP_BASE).powf(1. / POW_MOD)) as usize
     }
 }
 
-impl Default for LevelTimer {
-    fn default() -> Self {
-        LevelTimer(Timer::new(Duration::from_secs(30), TimerMode::Repeating))
-    }
-}
-
-fn tick_level_timer(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut timer: ResMut<LevelTimer>,
-    mut player_level: ResMut<PlayerLevel>,
-) {
-    timer.0.tick(time.delta());
-
-    if !timer.0.is_finished() {
-        return;
-    }
-
-    player_level.0 += 1;
-
-    commands.trigger(DrawTransmutationOffers);
-}
-
-fn clear_level_resources(
-    _event: On<GameOverWithDelay>,
-    mut player_level: ResMut<PlayerLevel>,
-    mut level_timer: ResMut<LevelTimer>,
-) {
+fn clear_level_resources(_event: On<GameOverWithDelay>, mut player_level: ResMut<PlayerLevel>) {
     *player_level = PlayerLevel::default();
-    *level_timer = LevelTimer::default();
 }
+
+fn increase_player_xp(
+    event: On<IncreasePlayerXP>,
+    mut player_level: ResMut<PlayerLevel>,
+    mut commands: Commands,
+) {
+    if player_level.increase_xp(event.0) > 0 {
+        commands.trigger(DrawTransmutationOffers);
+    }
+}
+
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(clear_level_resources)
-            .init_resource::<PlayerLevel>()
-            .init_resource::<LevelTimer>()
-            .add_systems(Update, tick_level_timer.in_set(InGameSystems));
+        app.add_observer(increase_player_xp)
+            .add_observer(clear_level_resources)
+            .init_resource::<PlayerLevel>();
     }
 }

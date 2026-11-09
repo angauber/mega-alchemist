@@ -13,7 +13,7 @@ use rand::prelude::*;
 use std::time::Duration;
 
 const MIN_SPAWNER_DISTANCE: f32 = 150.;
-const MAX_SPAWNER_DISTANCE: f32 = 500.;
+const MAX_SPAWNER_DISTANCE: f32 = 700.;
 
 pub struct SpawnManagerPlugin;
 
@@ -33,15 +33,15 @@ impl Enemy {
         match self {
             Bat => 15.0,
             Skeleton => 50.0,
-            Dragon => 150.0,
+            Dragon => 200.0,
         }
     }
 
     pub fn unlocks_at(&self) -> usize {
         match self {
             Bat => 0,
-            Skeleton => 3,
-            Dragon => 10,
+            Skeleton => 5,
+            Dragon => 15,
         }
     }
 }
@@ -55,9 +55,9 @@ pub struct SpawnWeights {
 impl Default for SpawnWeights {
     fn default() -> Self {
         SpawnWeights {
-            bat: 100,
+            bat: 90,
             skeleton: 10,
-            dragon: 5,
+            dragon: 2,
         }
     }
 }
@@ -217,7 +217,7 @@ fn spawn_enemy(
         return;
     };
 
-    let Some(enemy_to_spawn) = spawn_manager.spawnable_enemy(player_level.0) else {
+    let Some(enemy_to_spawn) = spawn_manager.spawnable_enemy(player_level.level()) else {
         return;
     };
 

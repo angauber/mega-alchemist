@@ -31,6 +31,9 @@ struct PlayerHealthUI;
 #[derive(Component, Default)]
 struct PlayerLevelUI;
 
+#[derive(Component, Default)]
+struct PlayerXPUI;
+
 fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
     let font = FontSource::Handle(font_assets.pixuf_font.clone());
 
@@ -48,7 +51,8 @@ fn setup_game_ui_node(mut commands: Commands, font_assets: Res<FontAssets>) {
             },
         ))
         .with_child((PlayerHealthUI, ui_text(font.clone(), 64.)))
-        .with_child((PlayerLevelUI, ui_text(font.clone(), 32.)));
+        .with_child((PlayerLevelUI, ui_text(font.clone(), 32.)))
+        .with_child((PlayerXPUI, ui_text(font.clone(), 32.)));
 }
 
 fn format_player_health_text(health: &Health) -> Text {
@@ -71,14 +75,25 @@ fn update_player_health_text(
 }
 
 fn update_level_text(
-    player_leve: Res<PlayerLevel>,
+    player_level: Res<PlayerLevel>,
     mut text_query: Query<&mut Text, With<PlayerLevelUI>>,
 ) {
     let Ok(mut text) = text_query.single_mut() else {
         return;
     };
 
-    text.0 = format!("Alchemy Level {}", player_leve.0);
+    text.0 = format!("Alchemy Level {}", player_level.level());
+}
+
+fn update_xp_text(
+    player_level: Res<PlayerLevel>,
+    mut text_query: Query<&mut Text, With<PlayerXPUI>>,
+) {
+    let Ok(mut text) = text_query.single_mut() else {
+        return;
+    };
+
+    text.0 = format!("XP {}", player_level.xp());
 }
 
 fn update_ui_scale(window: Single<&Window, With<PrimaryWindow>>, mut ui_scale: ResMut<UiScale>) {
@@ -101,7 +116,8 @@ impl Plugin for GameUiPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (update_player_health_text, update_level_text).in_set(InGameSystems),
+                (update_player_health_text, update_level_text, update_xp_text)
+                    .in_set(InGameSystems),
             );
     }
 }

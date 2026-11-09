@@ -11,9 +11,9 @@ use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
-const BASE_SPEED: f32 = 80.0;
-const ACCELERATION: f32 = 400.0;
-const DECELERATION: f32 = 700.0;
+const BASE_SPEED: f32 = 75.0;
+const ACCELERATION: f32 = 300.0;
+const DECELERATION: f32 = 600.0;
 
 #[derive(Component, Default)]
 pub struct Player;

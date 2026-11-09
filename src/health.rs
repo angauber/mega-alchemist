@@ -1,4 +1,5 @@
 use crate::game::{GameOver, InGameSystems};
+use crate::level::IncreasePlayerXP;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -30,6 +31,8 @@ pub fn entities_health_system(
                 commands.trigger(GameOver);
                 return;
             }
+
+            commands.trigger(IncreasePlayerXP(health.max as usize));
 
             commands.entity(entity).despawn();
         }

@@ -1,4 +1,5 @@
 use crate::agent::Enemy;
+use crate::build::PlayerBuild;
 use crate::ui::text::RenderUiText;
 #[cfg(feature = "dev_tools")]
 use bevy::prelude::KeyCode::Space;
@@ -77,9 +78,12 @@ fn on_game_over_with_delay(
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_pause_state: ResMut<NextState<PauseState>>,
     mut game_clock: ResMut<GameClock>,
+    mut player_build: ResMut<PlayerBuild>,
 ) {
     info!("respawning level !");
     game_clock.0.reset();
+
+    *player_build = PlayerBuild::default();
 
     *level_selection = LevelSelection::index(0);
 
